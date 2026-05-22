@@ -1,0 +1,38 @@
+import { Baby } from 'lucide-react';
+import LoginForm from '@/components/features/auth/LoginForm';
+
+export default function LoginPage() {
+  return (
+    <main className="flex flex-col min-h-dvh bg-white">
+      {/* Top hero section */}
+      <div className="bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 px-6 pt-16 pb-12 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
+        <div className="relative flex flex-col items-center text-center">
+          <div className="w-16 h-16 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mb-4">
+            <Baby size={32} className="text-white" />
+          </div>
+          <h1 className="text-3xl font-black text-white tracking-tight">SusterKu</h1>
+          <p className="text-blue-100 text-sm mt-1.5">Suster terpercaya untuk si kecil</p>
+        </div>
+      </div>
+
+      {/* Form card */}
+      <div className="flex-1 bg-white rounded-t-3xl -mt-6 px-6 pt-8 pb-8">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Selamat Datang</h2>
+          <p className="text-gray-500 text-sm mt-1">Masuk untuk melanjutkan</p>
+        </div>
+
+        <LoginForm />
+
+        <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+          <p className="text-xs text-gray-400">
+            Demo: <span className="font-mono text-gray-500">demo@example.com</span> /{' '}
+            <span className="font-mono text-gray-500">password123</span>
+          </p>
+        </div>
+      </div>
+    </main>
+  );
+}
