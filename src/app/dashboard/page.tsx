@@ -1,8 +1,10 @@
+import AuthGuard from '@/components/features/auth/AuthGuard';
 import Navbar from '@/components/features/dashboard/Navbar';
 import NurseList from '@/components/features/dashboard/NurseList';
 
 export default function DashboardPage() {
   return (
+    <AuthGuard>
     <main className="flex flex-col min-h-dvh bg-[#f8fafc]">
       <Navbar />
 
@@ -41,5 +43,6 @@ export default function DashboardPage() {
         <NurseList />
       </div>
     </main>
+    </AuthGuard>
   );
 }
