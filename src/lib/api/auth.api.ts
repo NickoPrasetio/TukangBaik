@@ -6,6 +6,7 @@ export interface AuthResponse {
   name: string;
   email: string;
   phone?: string;
+  role: string;
 }
 
 export const authApi = {

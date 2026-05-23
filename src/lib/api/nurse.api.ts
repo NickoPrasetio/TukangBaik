@@ -16,6 +16,18 @@ export interface NurseApiResponse {
   bio: string;
 }
 
+export interface NurseCreatePayload {
+  name: string;
+  age: number;
+  experience: number;
+  specializations: string[];
+  location: string;
+  pricePerDay: number;
+  isAvailable: boolean;
+  bio: string;
+  avatar?: string;
+}
+
 function toNurse(n: NurseApiResponse): Nurse {
   return { ...n, reviews: [] };
 }
@@ -32,6 +44,11 @@ export const nurseApi = {
 
   getById: async (id: string): Promise<Nurse> => {
     const data = await apiClient.get<NurseApiResponse>(`/api/nurses/${id}`);
+    return toNurse(data);
+  },
+
+  create: async (payload: NurseCreatePayload, token: string): Promise<Nurse> => {
+    const data = await apiClient.post<NurseApiResponse>('/api/nurses', payload, token);
     return toNurse(data);
   },
 };

@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Search, SlidersHorizontal } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, SlidersHorizontal, Plus } from 'lucide-react';
 import { useNurseStore } from '@/store/nurseStore';
+import { useAuthStore } from '@/store/authStore';
 import { Nurse } from '@/types';
 import NurseCard from './NurseCard';
 import NurseDetailModal from './NurseDetailModal';
+import AddNurseModal from './AddNurseModal';
 
 export default function NurseList() {
   const {
@@ -19,15 +21,16 @@ export default function NurseList() {
     fetchNurses,
   } = useNurseStore();
 
+  const isAdmin = useAuthStore((s) => s.isAdmin);
+
   const [selectedNurse, setSelectedNurse] = useState<Nurse | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [inputValue, setInputValue] = useState(searchQuery);
 
-  // Fetch on mount and when filters change
   useEffect(() => {
     fetchNurses();
   }, [searchQuery, filterAvailable]);
 
-  // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => setSearchQuery(inputValue), 400);
     return () => clearTimeout(timer);
@@ -47,20 +50,32 @@ export default function NurseList() {
         />
       </div>
 
-      {/* Filter row */}
-      <div className="flex items-center gap-2">
-        <SlidersHorizontal size={16} className="text-gray-500" />
-        <button
-          onClick={() => setFilterAvailable(!filterAvailable)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-all duration-200 ${
-            filterAvailable
-              ? 'bg-blue-500 text-white border-blue-500'
-              : 'bg-white text-gray-600 border-gray-200'
-          }`}
-        >
-          <span className={`w-2 h-2 rounded-full ${filterAvailable ? 'bg-white' : 'bg-green-400'}`} />
-          Tersedia Sekarang
-        </button>
+      {/* Filter row + admin button */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <SlidersHorizontal size={16} className="text-gray-500" />
+          <button
+            onClick={() => setFilterAvailable(!filterAvailable)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-all duration-200 ${
+              filterAvailable
+                ? 'bg-blue-500 text-white border-blue-500'
+                : 'bg-white text-gray-600 border-gray-200'
+            }`}
+          >
+            <span className={`w-2 h-2 rounded-full ${filterAvailable ? 'bg-white' : 'bg-green-400'}`} />
+            Tersedia Sekarang
+          </button>
+        </div>
+
+        {isAdmin && (
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-blue-500 text-white border border-blue-500"
+          >
+            <Plus size={15} />
+            Tambah Suster
+          </button>
+        )}
       </div>
 
       {/* Loading state */}
@@ -108,6 +123,10 @@ export default function NurseList() {
 
       {selectedNurse && (
         <NurseDetailModal nurse={selectedNurse} onClose={() => setSelectedNurse(null)} />
+      )}
+
+      {showAddModal && (
+        <AddNurseModal onClose={() => setShowAddModal(false)} />
       )}
     </div>
   );

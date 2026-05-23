@@ -4,6 +4,7 @@ export interface User {
   email: string;
   phone?: string;
   avatar?: string;
+  role?: string;
 }
 
 export interface Review {
