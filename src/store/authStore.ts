@@ -1,55 +1,53 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User } from '@/types';
+import { authApi } from '@/lib/api/auth.api';
 
 interface AuthState {
   user: User | null;
+  token: string | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   signup: (name: string, email: string, password: string, phone: string) => Promise<boolean>;
   logout: () => void;
 }
 
-const DUMMY_USERS: (User & { password: string })[] = [
-  {
-    id: 'u1',
-    name: 'Demo User',
-    email: 'demo@example.com',
-    phone: '08123456789',
-    password: 'password123',
-  },
-];
-
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
+      token: null,
       isAuthenticated: false,
 
       login: async (email, password) => {
-        await new Promise((r) => setTimeout(r, 800));
-        const found = DUMMY_USERS.find((u) => u.email === email && u.password === password);
-        if (found) {
-          const { password: _, ...user } = found;
-          set({ user, isAuthenticated: true });
+        try {
+          const res = await authApi.login(email, password);
+          set({
+            user: { id: res.id, name: res.name, email: res.email, phone: res.phone },
+            token: res.token,
+            isAuthenticated: true,
+          });
           return true;
+        } catch {
+          return false;
         }
-        return false;
       },
 
-      signup: async (name, email, _password, phone) => {
-        await new Promise((r) => setTimeout(r, 800));
-        const newUser: User = {
-          id: `u${Date.now()}`,
-          name,
-          email,
-          phone,
-        };
-        set({ user: newUser, isAuthenticated: true });
-        return true;
+      signup: async (name, email, password, phone) => {
+        try {
+          const res = await authApi.register(name, email, password, phone);
+          set({
+            user: { id: res.id, name: res.name, email: res.email, phone: res.phone },
+            token: res.token,
+            isAuthenticated: true,
+          });
+          return true;
+        } catch {
+          return false;
+        }
       },
 
-      logout: () => set({ user: null, isAuthenticated: false }),
+      logout: () => set({ user: null, token: null, isAuthenticated: false }),
     }),
     { name: 'auth-storage' }
   )

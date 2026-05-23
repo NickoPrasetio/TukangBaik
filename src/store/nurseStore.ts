@@ -1,65 +1,46 @@
 import { create } from 'zustand';
 import { Nurse } from '@/types';
-import { DUMMY_NURSES } from '@/data/nurses';
+import { nurseApi } from '@/lib/api/nurse.api';
 
 interface NurseState {
   nurses: Nurse[];
   searchQuery: string;
   filterAvailable: boolean;
-  selectedNurse: Nurse | null;
+  loading: boolean;
+  error: string | null;
   setSearchQuery: (query: string) => void;
   setFilterAvailable: (value: boolean) => void;
-  setSelectedNurse: (nurse: Nurse | null) => void;
-  submitRating: (nurseId: string, rating: number, comment: string, userName: string) => void;
-  getFilteredNurses: () => Nurse[];
+  fetchNurses: () => Promise<void>;
+  updateNurseLocally: (nurseId: string, patch: Partial<Nurse>) => void;
 }
 
 export const useNurseStore = create<NurseState>((set, get) => ({
-  nurses: DUMMY_NURSES,
+  nurses: [],
   searchQuery: '',
   filterAvailable: false,
-  selectedNurse: null,
+  loading: false,
+  error: null,
 
   setSearchQuery: (query) => set({ searchQuery: query }),
   setFilterAvailable: (value) => set({ filterAvailable: value }),
-  setSelectedNurse: (nurse) => set({ selectedNurse: nurse }),
 
-  submitRating: (nurseId, rating, comment, userName) => {
-    set((state) => ({
-      nurses: state.nurses.map((nurse) => {
-        if (nurse.id !== nurseId) return nurse;
-        const newReview = {
-          id: `r${Date.now()}`,
-          userId: `u${Date.now()}`,
-          userName,
-          rating,
-          comment,
-          date: new Date().toISOString().split('T')[0],
-        };
-        const allReviews = [newReview, ...nurse.reviews];
-        const newRating =
-          allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length;
-        return {
-          ...nurse,
-          reviews: allReviews,
-          totalReviews: allReviews.length,
-          rating: Math.round(newRating * 10) / 10,
-        };
-      }),
-    }));
+  fetchNurses: async () => {
+    const { searchQuery, filterAvailable } = get();
+    set({ loading: true, error: null });
+    try {
+      const nurses = await nurseApi.getAll(
+        searchQuery || undefined,
+        filterAvailable || undefined
+      );
+      set({ nurses, loading: false });
+    } catch (e) {
+      set({ error: 'Gagal memuat data suster', loading: false });
+    }
   },
 
-  getFilteredNurses: () => {
-    const { nurses, searchQuery, filterAvailable } = get();
-    return nurses.filter((nurse) => {
-      const matchesSearch =
-        nurse.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        nurse.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        nurse.specializations.some((s) =>
-          s.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-      const matchesAvailable = filterAvailable ? nurse.isAvailable : true;
-      return matchesSearch && matchesAvailable;
-    });
+  updateNurseLocally: (nurseId, patch) => {
+    set((state) => ({
+      nurses: state.nurses.map((n) => (n.id === nurseId ? { ...n, ...patch } : n)),
+    }));
   },
 }));

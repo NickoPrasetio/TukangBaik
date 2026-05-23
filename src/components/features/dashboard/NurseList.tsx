@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Search, SlidersHorizontal } from 'lucide-react';
 import { useNurseStore } from '@/store/nurseStore';
 import { Nurse } from '@/types';
@@ -8,11 +8,30 @@ import NurseCard from './NurseCard';
 import NurseDetailModal from './NurseDetailModal';
 
 export default function NurseList() {
-  const { searchQuery, filterAvailable, setSearchQuery, setFilterAvailable, getFilteredNurses } =
-    useNurseStore();
-  const [selectedNurse, setSelectedNurse] = useState<Nurse | null>(null);
+  const {
+    nurses,
+    searchQuery,
+    filterAvailable,
+    loading,
+    error,
+    setSearchQuery,
+    setFilterAvailable,
+    fetchNurses,
+  } = useNurseStore();
 
-  const nurses = getFilteredNurses();
+  const [selectedNurse, setSelectedNurse] = useState<Nurse | null>(null);
+  const [inputValue, setInputValue] = useState(searchQuery);
+
+  // Fetch on mount and when filters change
+  useEffect(() => {
+    fetchNurses();
+  }, [searchQuery, filterAvailable]);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => setSearchQuery(inputValue), 400);
+    return () => clearTimeout(timer);
+  }, [inputValue]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -22,8 +41,8 @@ export default function NurseList() {
         <input
           type="search"
           placeholder="Cari suster, lokasi, atau keahlian..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
           className="w-full pl-11 pr-4 py-3 rounded-2xl border border-gray-200 bg-white text-base focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent placeholder-gray-400"
         />
       </div>
@@ -39,26 +58,47 @@ export default function NurseList() {
               : 'bg-white text-gray-600 border-gray-200'
           }`}
         >
-          <span
-            className={`w-2 h-2 rounded-full ${filterAvailable ? 'bg-white' : 'bg-green-400'}`}
-          />
+          <span className={`w-2 h-2 rounded-full ${filterAvailable ? 'bg-white' : 'bg-green-400'}`} />
           Tersedia Sekarang
         </button>
       </div>
 
+      {/* Loading state */}
+      {loading && (
+        <div className="flex flex-col gap-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-white rounded-3xl h-36 animate-pulse border border-gray-100" />
+          ))}
+        </div>
+      )}
+
+      {/* Error state */}
+      {error && !loading && (
+        <div className="text-center py-10">
+          <p className="text-gray-500">{error}</p>
+          <button onClick={fetchNurses} className="mt-2 text-blue-500 text-sm font-medium">
+            Coba lagi
+          </button>
+        </div>
+      )}
+
       {/* Result count */}
-      <p className="text-sm text-gray-500">
-        <span className="font-semibold text-gray-800">{nurses.length}</span> suster ditemukan
-      </p>
+      {!loading && !error && (
+        <p className="text-sm text-gray-500">
+          <span className="font-semibold text-gray-800">{nurses.length}</span> suster ditemukan
+        </p>
+      )}
 
       {/* List */}
-      {nurses.length > 0 ? (
+      {!loading && !error && nurses.length > 0 && (
         <div className="flex flex-col gap-3">
           {nurses.map((nurse) => (
             <NurseCard key={nurse.id} nurse={nurse} onView={setSelectedNurse} />
           ))}
         </div>
-      ) : (
+      )}
+
+      {!loading && !error && nurses.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <span className="text-5xl mb-4">🔍</span>
           <p className="text-gray-600 font-medium">Tidak ada suster ditemukan</p>
@@ -66,7 +106,6 @@ export default function NurseList() {
         </div>
       )}
 
-      {/* Modal */}
       {selectedNurse && (
         <NurseDetailModal nurse={selectedNurse} onClose={() => setSelectedNurse(null)} />
       )}

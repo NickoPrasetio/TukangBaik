@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { X, MapPin, Clock, Star, ChevronDown } from 'lucide-react';
-import { Nurse } from '@/types';
-import { useNurseStore } from '@/store/nurseStore';
+import { useState, useEffect } from 'react';
+import { X, MapPin, Star, ChevronDown } from 'lucide-react';
+import { Nurse, Review } from '@/types';
 import { useAuthStore } from '@/store/authStore';
+import { useNurseStore } from '@/store/nurseStore';
+import { reviewApi } from '@/lib/api/review.api';
 import Badge, { getVariantByIndex } from '@/components/ui/Badge';
 import StarRating from '@/components/ui/StarRating';
 import Button from '@/components/ui/Button';
@@ -23,19 +24,42 @@ function formatPrice(price: number): string {
 }
 
 export default function NurseDetailModal({ nurse, onClose }: NurseDetailModalProps) {
-  const { submitRating } = useNurseStore();
   const { user } = useAuthStore();
+  const { updateNurseLocally } = useNurseStore();
 
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [selectedRating, setSelectedRating] = useState(0);
   const [comment, setComment] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  function handleSubmitReview() {
+  useEffect(() => {
+    reviewApi.getByNurse(nurse.id)
+      .then(setReviews)
+      .finally(() => setReviewsLoading(false));
+  }, [nurse.id]);
+
+  async function handleSubmitReview() {
     if (!selectedRating || !comment.trim() || !user) return;
-    submitRating(nurse.id, selectedRating, comment.trim(), user.name);
-    setSubmitted(true);
-    setShowReviewForm(false);
+    setSubmitting(true);
+    try {
+      const newReview = await reviewApi.create(nurse.id, user.name, selectedRating, comment.trim());
+      const updated = [newReview, ...reviews];
+      setReviews(updated);
+      const newAvg = updated.reduce((s, r) => s + r.rating, 0) / updated.length;
+      updateNurseLocally(nurse.id, {
+        rating: Math.round(newAvg * 10) / 10,
+        totalReviews: updated.length,
+      });
+      setSubmitted(true);
+      setShowReviewForm(false);
+    } catch {
+      alert('Gagal mengirim ulasan. Coba lagi.');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -45,13 +69,11 @@ export default function NurseDetailModal({ nurse, onClose }: NurseDetailModalPro
         className="relative bg-white rounded-t-3xl w-full max-w-[430px] max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Drag handle */}
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 bg-gray-200 rounded-full" />
         </div>
 
         <div className="px-5 pb-8">
-          {/* Close button */}
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
@@ -113,7 +135,7 @@ export default function NurseDetailModal({ nurse, onClose }: NurseDetailModalPro
             </div>
           </div>
 
-          {/* Price */}
+          {/* Price + Book */}
           <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-4 mb-5 flex items-center justify-between">
             <div>
               <p className="text-blue-100 text-sm">Tarif harian</p>
@@ -144,7 +166,6 @@ export default function NurseDetailModal({ nurse, onClose }: NurseDetailModalPro
               )}
             </div>
 
-            {/* Review Form */}
             {showReviewForm && !submitted && (
               <div className="bg-blue-50 rounded-2xl p-4 mb-4">
                 <p className="text-sm font-medium text-gray-700 mb-2">Rating kamu:</p>
@@ -165,6 +186,7 @@ export default function NurseDetailModal({ nurse, onClose }: NurseDetailModalPro
                   size="sm"
                   fullWidth
                   className="mt-2"
+                  loading={submitting}
                   disabled={!selectedRating || !comment.trim()}
                   onClick={handleSubmitReview}
                 >
@@ -179,19 +201,28 @@ export default function NurseDetailModal({ nurse, onClose }: NurseDetailModalPro
               </div>
             )}
 
-            {/* Review list */}
-            <div className="flex flex-col gap-3">
-              {nurse.reviews.map((review) => (
-                <div key={review.id} className="border border-gray-100 rounded-2xl p-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-sm font-semibold text-gray-800">{review.userName}</p>
-                    <p className="text-xs text-gray-400">{review.date}</p>
+            {reviewsLoading ? (
+              <div className="space-y-2">
+                {[1, 2].map((i) => (
+                  <div key={i} className="h-20 bg-gray-100 rounded-2xl animate-pulse" />
+                ))}
+              </div>
+            ) : reviews.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-4">Belum ada ulasan</p>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {reviews.map((review) => (
+                  <div key={review.id} className="border border-gray-100 rounded-2xl p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-sm font-semibold text-gray-800">{review.userName}</p>
+                      <p className="text-xs text-gray-400">{review.date}</p>
+                    </div>
+                    <StarRating rating={review.rating} size="sm" />
+                    <p className="text-sm text-gray-600 mt-1.5">{review.comment}</p>
                   </div>
-                  <StarRating rating={review.rating} size="sm" />
-                  <p className="text-sm text-gray-600 mt-1.5">{review.comment}</p>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
