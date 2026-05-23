@@ -1,21 +1,21 @@
 import { create } from 'zustand';
-import { Nurse } from '@/types';
-import { nurseApi } from '@/lib/api/nurse.api';
+import { Worker } from '@/types';
+import { workerApi } from '@/lib/api/worker.api';
 
-interface NurseState {
-  nurses: Nurse[];
+interface WorkerState {
+  workers: Worker[];
   searchQuery: string;
   filterAvailable: boolean;
   loading: boolean;
   error: string | null;
   setSearchQuery: (query: string) => void;
   setFilterAvailable: (value: boolean) => void;
-  fetchNurses: () => Promise<void>;
-  updateNurseLocally: (nurseId: string, patch: Partial<Nurse>) => void;
+  fetchWorkers: () => Promise<void>;
+  updateWorkerLocally: (workerId: string, patch: Partial<Worker>) => void;
 }
 
-export const useNurseStore = create<NurseState>((set, get) => ({
-  nurses: [],
+export const useWorkerStore = create<WorkerState>((set, get) => ({
+  workers: [],
   searchQuery: '',
   filterAvailable: false,
   loading: false,
@@ -24,23 +24,23 @@ export const useNurseStore = create<NurseState>((set, get) => ({
   setSearchQuery: (query) => set({ searchQuery: query }),
   setFilterAvailable: (value) => set({ filterAvailable: value }),
 
-  fetchNurses: async () => {
+  fetchWorkers: async () => {
     const { searchQuery, filterAvailable } = get();
     set({ loading: true, error: null });
     try {
-      const nurses = await nurseApi.getAll(
+      const workers = await workerApi.getAll(
         searchQuery || undefined,
         filterAvailable || undefined
       );
-      set({ nurses, loading: false });
+      set({ workers, loading: false });
     } catch (e) {
-      set({ error: 'Gagal memuat data suster', loading: false });
+      set({ error: 'Gagal memuat data tukang', loading: false });
     }
   },
 
-  updateNurseLocally: (nurseId, patch) => {
+  updateWorkerLocally: (workerId, patch) => {
     set((state) => ({
-      nurses: state.nurses.map((n) => (n.id === nurseId ? { ...n, ...patch } : n)),
+      workers: state.workers.map((w) => (w.id === workerId ? { ...w, ...patch } : w)),
     }));
   },
 }));

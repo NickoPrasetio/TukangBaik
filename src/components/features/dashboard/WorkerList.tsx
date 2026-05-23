@@ -2,33 +2,33 @@
 
 import { useState, useEffect } from 'react';
 import { Search, SlidersHorizontal, Plus } from 'lucide-react';
-import { useNurseStore } from '@/store/nurseStore';
+import { useWorkerStore } from '@/store/workerStore';
 import { useAuthStore } from '@/store/authStore';
-import { Nurse } from '@/types';
-import NurseCard from './NurseCard';
-import NurseDetailModal from './NurseDetailModal';
-import AddNurseModal from './AddNurseModal';
+import { Worker } from '@/types';
+import WorkerCard from './WorkerCard';
+import WorkerDetailModal from './WorkerDetailModal';
+import AddWorkerModal from './AddWorkerModal';
 
-export default function NurseList() {
+export default function WorkerList() {
   const {
-    nurses,
+    workers,
     searchQuery,
     filterAvailable,
     loading,
     error,
     setSearchQuery,
     setFilterAvailable,
-    fetchNurses,
-  } = useNurseStore();
+    fetchWorkers,
+  } = useWorkerStore();
 
   const isAdmin = useAuthStore((s) => s.isAdmin);
 
-  const [selectedNurse, setSelectedNurse] = useState<Nurse | null>(null);
+  const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [inputValue, setInputValue] = useState(searchQuery);
 
   useEffect(() => {
-    fetchNurses();
+    fetchWorkers();
   }, [searchQuery, filterAvailable]);
 
   useEffect(() => {
@@ -43,7 +43,7 @@ export default function NurseList() {
         <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
         <input
           type="search"
-          placeholder="Cari suster, lokasi, atau keahlian..."
+          placeholder="Cari tukang, lokasi, atau keahlian..."
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           className="w-full pl-11 pr-4 py-3 rounded-2xl border border-gray-200 bg-white text-base focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent placeholder-gray-400"
@@ -73,7 +73,7 @@ export default function NurseList() {
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-blue-500 text-white border border-blue-500"
           >
             <Plus size={15} />
-            Tambah Suster
+            Tambah Tukang
           </button>
         )}
       </div>
@@ -91,7 +91,7 @@ export default function NurseList() {
       {error && !loading && (
         <div className="text-center py-10">
           <p className="text-gray-500">{error}</p>
-          <button onClick={fetchNurses} className="mt-2 text-blue-500 text-sm font-medium">
+          <button onClick={fetchWorkers} className="mt-2 text-blue-500 text-sm font-medium">
             Coba lagi
           </button>
         </div>
@@ -100,33 +100,33 @@ export default function NurseList() {
       {/* Result count */}
       {!loading && !error && (
         <p className="text-sm text-gray-500">
-          <span className="font-semibold text-gray-800">{nurses.length}</span> suster ditemukan
+          <span className="font-semibold text-gray-800">{workers.length}</span> tukang ditemukan
         </p>
       )}
 
       {/* List */}
-      {!loading && !error && nurses.length > 0 && (
+      {!loading && !error && workers.length > 0 && (
         <div className="flex flex-col gap-3">
-          {nurses.map((nurse) => (
-            <NurseCard key={nurse.id} nurse={nurse} onView={setSelectedNurse} />
+          {workers.map((worker) => (
+            <WorkerCard key={worker.id} worker={worker} onView={setSelectedWorker} />
           ))}
         </div>
       )}
 
-      {!loading && !error && nurses.length === 0 && (
+      {!loading && !error && workers.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <span className="text-5xl mb-4">🔍</span>
-          <p className="text-gray-600 font-medium">Tidak ada suster ditemukan</p>
+          <p className="text-gray-600 font-medium">Tidak ada tukang ditemukan</p>
           <p className="text-sm text-gray-400 mt-1">Coba ubah kata kunci pencarian</p>
         </div>
       )}
 
-      {selectedNurse && (
-        <NurseDetailModal nurse={selectedNurse} onClose={() => setSelectedNurse(null)} />
+      {selectedWorker && (
+        <WorkerDetailModal worker={selectedWorker} onClose={() => setSelectedWorker(null)} />
       )}
 
       {showAddModal && (
-        <AddNurseModal onClose={() => setShowAddModal(false)} />
+        <AddWorkerModal onClose={() => setShowAddModal(false)} />
       )}
     </div>
   );

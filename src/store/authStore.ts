@@ -11,11 +11,17 @@ interface AuthState {
   login: (email: string, password: string) => Promise<boolean>;
   signup: (name: string, email: string, password: string, phone: string) => Promise<boolean>;
   logout: () => void;
+  updateProfile: (data: { name?: string; phone?: string }) => Promise<boolean>;
+  updateAvatar: (file: File) => Promise<boolean>;
+}
+
+function toUser(res: { id: string; name: string; email: string; phone?: string; role: string; avatar?: string }): User {
+  return { id: res.id, name: res.name, email: res.email, phone: res.phone, role: res.role, avatar: res.avatar };
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       token: null,
       isAuthenticated: false,
@@ -24,34 +30,40 @@ export const useAuthStore = create<AuthState>()(
       login: async (email, password) => {
         try {
           const res = await authApi.login(email, password);
-          set({
-            user: { id: res.id, name: res.name, email: res.email, phone: res.phone, role: res.role },
-            token: res.token,
-            isAuthenticated: true,
-            isAdmin: res.role === 'ROLE_ADMIN',
-          });
+          set({ user: toUser(res), token: res.token, isAuthenticated: true, isAdmin: res.role === 'ROLE_ADMIN' });
           return true;
-        } catch {
-          return false;
-        }
+        } catch { return false; }
       },
 
       signup: async (name, email, password, phone) => {
         try {
           const res = await authApi.register(name, email, password, phone);
-          set({
-            user: { id: res.id, name: res.name, email: res.email, phone: res.phone, role: res.role },
-            token: res.token,
-            isAuthenticated: true,
-            isAdmin: res.role === 'ROLE_ADMIN',
-          });
+          set({ user: toUser(res), token: res.token, isAuthenticated: true, isAdmin: res.role === 'ROLE_ADMIN' });
           return true;
-        } catch {
-          return false;
-        }
+        } catch { return false; }
       },
 
       logout: () => set({ user: null, token: null, isAuthenticated: false, isAdmin: false }),
+
+      updateProfile: async (data) => {
+        const { token } = get();
+        if (!token) return false;
+        try {
+          const res = await authApi.updateMe(data, token);
+          set((s) => ({ user: { ...s.user!, ...toUser(res) } }));
+          return true;
+        } catch { return false; }
+      },
+
+      updateAvatar: async (file) => {
+        const { token } = get();
+        if (!token) return false;
+        try {
+          const res = await authApi.uploadAvatar(file, token);
+          set((s) => ({ user: { ...s.user!, avatar: res.avatar } }));
+          return true;
+        } catch { return false; }
+      },
     }),
     { name: 'auth-storage' }
   )

@@ -1,18 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Plus } from 'lucide-react';
-import { nurseApi } from '@/lib/api/nurse.api';
+import { X, Plus, Camera } from 'lucide-react';
+import { workerApi } from '@/lib/api/worker.api';
+import { useRef } from 'react';
 import { useAuthStore } from '@/store/authStore';
-import { useNurseStore } from '@/store/nurseStore';
+import { useWorkerStore } from '@/store/workerStore';
 
 interface Props {
   onClose: () => void;
 }
 
-export default function AddNurseModal({ onClose }: Props) {
+export default function AddWorkerModal({ onClose }: Props) {
   const token = useAuthStore((s) => s.token);
-  const fetchNurses = useNurseStore((s) => s.fetchNurses);
+  const fetchWorkers = useWorkerStore((s) => s.fetchWorkers);
 
   const [form, setForm] = useState({
     name: '',
@@ -24,6 +25,8 @@ export default function AddNurseModal({ onClose }: Props) {
     specializations: '',
     isAvailable: true,
   });
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -35,6 +38,17 @@ export default function AddNurseModal({ onClose }: Props) {
     }));
   };
 
+  const photoRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { setError('Ukuran foto maksimal 5MB'); return; }
+    setPhoto(file);
+    setPhotoPreview(URL.createObjectURL(file));
+    setError('');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.location || !form.pricePerDay) {
@@ -44,7 +58,7 @@ export default function AddNurseModal({ onClose }: Props) {
     setLoading(true);
     setError('');
     try {
-      await nurseApi.create(
+      const worker = await workerApi.create(
         {
           name: form.name,
           age: Number(form.age) || 0,
@@ -59,10 +73,13 @@ export default function AddNurseModal({ onClose }: Props) {
         },
         token!
       );
-      await fetchNurses();
+      if (photo) {
+        await workerApi.uploadPhoto(worker.id, photo, token!);
+      }
+      await fetchWorkers();
       onClose();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Gagal menambahkan suster');
+      setError(err instanceof Error ? err.message : 'Gagal menambahkan tukang');
     } finally {
       setLoading(false);
     }
@@ -73,26 +90,43 @@ export default function AddNurseModal({ onClose }: Props) {
       <div className="w-full max-w-md bg-white rounded-t-3xl px-5 pt-5 pb-8 max-h-[90dvh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold text-gray-900">Tambah Suster Baru</h2>
+          <h2 className="text-lg font-bold text-gray-900">Tambah Tukang Baru</h2>
           <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100">
             <X size={20} className="text-gray-600" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          {/* Photo upload */}
+          <div className="flex flex-col items-center gap-2">
+            <div className="relative">
+              <div className="w-20 h-20 rounded-2xl overflow-hidden bg-gray-100 flex items-center justify-center border-2 border-dashed border-gray-300">
+                {photoPreview
+                  ? <img src={photoPreview} alt="preview" className="w-full h-full object-cover" />
+                  : <Camera size={24} className="text-gray-400" />}
+              </div>
+              <button type="button" onClick={() => photoRef.current?.click()}
+                className="absolute -bottom-1 -right-1 w-7 h-7 bg-blue-500 rounded-full flex items-center justify-center shadow">
+                <Plus size={13} className="text-white" />
+              </button>
+              <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+            </div>
+            <p className="text-xs text-gray-400">Foto tukang (maks. 5MB)</p>
+          </div>
+
           <Field label="Nama Lengkap *">
             <input name="name" value={form.name} onChange={handleChange}
-              placeholder="cth. Sari Dewi" className={inputCls} />
+              placeholder="cth. Budi Santoso" className={inputCls} />
           </Field>
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="Usia">
               <input name="age" type="number" value={form.age} onChange={handleChange}
-                placeholder="cth. 28" className={inputCls} />
+                placeholder="cth. 35" className={inputCls} />
             </Field>
             <Field label="Pengalaman (tahun)">
               <input name="experience" type="number" value={form.experience} onChange={handleChange}
-                placeholder="cth. 5" className={inputCls} />
+                placeholder="cth. 8" className={inputCls} />
             </Field>
           </div>
 
@@ -106,14 +140,14 @@ export default function AddNurseModal({ onClose }: Props) {
               placeholder="cth. 350000" className={inputCls} />
           </Field>
 
-          <Field label="Spesialisasi (pisahkan koma)">
+          <Field label="Keahlian (pisahkan koma)">
             <input name="specializations" value={form.specializations} onChange={handleChange}
-              placeholder="cth. Perawatan Bayi, Laktasi" className={inputCls} />
+              placeholder="cth. Pasang Keramik, Cat Dinding" className={inputCls} />
           </Field>
 
           <Field label="Bio">
             <textarea name="bio" value={form.bio} onChange={handleChange}
-              placeholder="Deskripsi singkat tentang suster..."
+              placeholder="Deskripsi singkat tentang tukang..."
               rows={3} className={`${inputCls} resize-none`} />
           </Field>
 
@@ -127,7 +161,7 @@ export default function AddNurseModal({ onClose }: Props) {
 
           <button type="submit" disabled={loading}
             className="mt-2 w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-blue-500 text-white font-semibold text-base disabled:opacity-60">
-            {loading ? 'Menyimpan...' : <><Plus size={18} /> Tambah Suster</>}
+            {loading ? 'Menyimpan...' : <><Plus size={18} /> Tambah Tukang</>}
           </button>
         </form>
       </div>

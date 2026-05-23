@@ -3,7 +3,7 @@ import { Review } from '@/types';
 
 export interface ReviewApiResponse {
   id: string;
-  nurseId: string;
+  workerId: string;
   userId: string;
   userName: string;
   rating: number;
@@ -23,14 +23,14 @@ function toReview(r: ReviewApiResponse): Review {
 }
 
 export const reviewApi = {
-  getByNurse: async (nurseId: string): Promise<Review[]> => {
-    const data = await apiClient.get<ReviewApiResponse[]>(`/api/reviews/nurse/${nurseId}`);
+  getByWorker: async (workerId: string): Promise<Review[]> => {
+    const data = await apiClient.get<ReviewApiResponse[]>(`/api/reviews/worker/${workerId}`);
     return data.map(toReview);
   },
 
-  create: async (nurseId: string, userName: string, rating: number, comment: string): Promise<Review> => {
+  create: async (workerId: string, userName: string, rating: number, comment: string): Promise<Review> => {
     const data = await apiClient.post<ReviewApiResponse>('/api/reviews', {
-      nurseId,
+      workerId,
       userName,
       rating,
       comment,

@@ -6,9 +6,10 @@ interface RequestOptions extends RequestInit {
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { token, ...init } = options;
+  const isFormData = init.body instanceof FormData;
 
   const headers: HeadersInit = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...init.headers,
   };
@@ -29,4 +30,10 @@ export const apiClient = {
 
   post: <T>(path: string, body: unknown, token?: string) =>
     request<T>(path, { method: 'POST', body: JSON.stringify(body), token }),
+
+  put: <T>(path: string, body: unknown, token?: string) =>
+    request<T>(path, { method: 'PUT', body: JSON.stringify(body), token }),
+
+  upload: <T>(path: string, formData: FormData, token?: string) =>
+    request<T>(path, { method: 'POST', body: formData, token }),
 };

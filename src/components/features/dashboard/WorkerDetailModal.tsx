@@ -2,16 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { X, MapPin, Star, ChevronDown } from 'lucide-react';
-import { Nurse, Review } from '@/types';
+import { Worker, Review } from '@/types';
 import { useAuthStore } from '@/store/authStore';
-import { useNurseStore } from '@/store/nurseStore';
+import { useWorkerStore } from '@/store/workerStore';
 import { reviewApi } from '@/lib/api/review.api';
 import Badge, { getVariantByIndex } from '@/components/ui/Badge';
 import StarRating from '@/components/ui/StarRating';
 import Button from '@/components/ui/Button';
 
-interface NurseDetailModalProps {
-  nurse: Nurse;
+interface WorkerDetailModalProps {
+  worker: Worker;
   onClose: () => void;
 }
 
@@ -23,9 +23,9 @@ function formatPrice(price: number): string {
   }).format(price);
 }
 
-export default function NurseDetailModal({ nurse, onClose }: NurseDetailModalProps) {
+export default function WorkerDetailModal({ worker, onClose }: WorkerDetailModalProps) {
   const { user } = useAuthStore();
-  const { updateNurseLocally } = useNurseStore();
+  const { updateWorkerLocally } = useWorkerStore();
 
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
@@ -36,20 +36,20 @@ export default function NurseDetailModal({ nurse, onClose }: NurseDetailModalPro
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    reviewApi.getByNurse(nurse.id)
+    reviewApi.getByWorker(worker.id)
       .then(setReviews)
       .finally(() => setReviewsLoading(false));
-  }, [nurse.id]);
+  }, [worker.id]);
 
   async function handleSubmitReview() {
     if (!selectedRating || !comment.trim() || !user) return;
     setSubmitting(true);
     try {
-      const newReview = await reviewApi.create(nurse.id, user.name, selectedRating, comment.trim());
+      const newReview = await reviewApi.create(worker.id, user.name, selectedRating, comment.trim());
       const updated = [newReview, ...reviews];
       setReviews(updated);
       const newAvg = updated.reduce((s, r) => s + r.rating, 0) / updated.length;
-      updateNurseLocally(nurse.id, {
+      updateWorkerLocally(worker.id, {
         rating: Math.round(newAvg * 10) / 10,
         totalReviews: updated.length,
       });
@@ -85,22 +85,22 @@ export default function NurseDetailModal({ nurse, onClose }: NurseDetailModalPro
           <div className="flex items-center gap-4 mt-4 mb-5">
             <div className="relative">
               <div className="w-20 h-20 rounded-2xl overflow-hidden bg-blue-50">
-                <img src={nurse.avatar} alt={nurse.name} className="w-full h-full object-cover" />
+                <img src={worker.avatar} alt={worker.name} className="w-full h-full object-cover" />
               </div>
-              {nurse.isAvailable && (
+              {worker.isAvailable && (
                 <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white" />
               )}
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">{nurse.name}</h2>
+              <h2 className="text-xl font-bold text-gray-900">{worker.name}</h2>
               <div className="flex items-center gap-1 mt-0.5">
                 <Star size={14} className="fill-amber-400 text-amber-400" />
-                <span className="text-sm font-bold text-gray-700">{nurse.rating.toFixed(1)}</span>
-                <span className="text-xs text-gray-400">({nurse.totalReviews} ulasan)</span>
+                <span className="text-sm font-bold text-gray-700">{worker.rating.toFixed(1)}</span>
+                <span className="text-xs text-gray-400">({worker.totalReviews} ulasan)</span>
               </div>
               <div className="flex items-center gap-1 mt-1 text-gray-500">
                 <MapPin size={12} />
-                <span className="text-xs">{nurse.location}</span>
+                <span className="text-xs">{worker.location}</span>
               </div>
             </div>
           </div>
@@ -108,9 +108,9 @@ export default function NurseDetailModal({ nurse, onClose }: NurseDetailModalPro
           {/* Stats */}
           <div className="grid grid-cols-3 gap-3 mb-5">
             {[
-              { label: 'Usia', value: `${nurse.age} th` },
-              { label: 'Pengalaman', value: `${nurse.experience} th` },
-              { label: 'Ulasan', value: nurse.totalReviews.toString() },
+              { label: 'Usia', value: `${worker.age} th` },
+              { label: 'Pengalaman', value: `${worker.experience} th` },
+              { label: 'Ulasan', value: worker.totalReviews.toString() },
             ].map(({ label, value }) => (
               <div key={label} className="bg-blue-50 rounded-2xl py-3 px-2 text-center">
                 <p className="text-base font-bold text-blue-700">{value}</p>
@@ -122,14 +122,14 @@ export default function NurseDetailModal({ nurse, onClose }: NurseDetailModalPro
           {/* Bio */}
           <div className="mb-4">
             <h3 className="font-semibold text-gray-800 mb-1.5">Tentang</h3>
-            <p className="text-sm text-gray-600 leading-relaxed">{nurse.bio}</p>
+            <p className="text-sm text-gray-600 leading-relaxed">{worker.bio}</p>
           </div>
 
           {/* Specializations */}
           <div className="mb-5">
             <h3 className="font-semibold text-gray-800 mb-2">Keahlian</h3>
             <div className="flex flex-wrap gap-2">
-              {nurse.specializations.map((spec, i) => (
+              {worker.specializations.map((spec, i) => (
                 <Badge key={spec} label={spec} variant={getVariantByIndex(i)} size="md" />
               ))}
             </div>
@@ -139,15 +139,15 @@ export default function NurseDetailModal({ nurse, onClose }: NurseDetailModalPro
           <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-4 mb-5 flex items-center justify-between">
             <div>
               <p className="text-blue-100 text-sm">Tarif harian</p>
-              <p className="text-white text-xl font-bold">{formatPrice(nurse.pricePerDay)}</p>
+              <p className="text-white text-xl font-bold">{formatPrice(worker.pricePerDay)}</p>
             </div>
             <Button
               variant="secondary"
-              disabled={!nurse.isAvailable}
+              disabled={!worker.isAvailable}
               size="md"
               onClick={() => alert('Fitur booking segera hadir!')}
             >
-              {nurse.isAvailable ? 'Book Sekarang' : 'Tidak Tersedia'}
+              {worker.isAvailable ? 'Book Sekarang' : 'Tidak Tersedia'}
             </Button>
           </div>
 

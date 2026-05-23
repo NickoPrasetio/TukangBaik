@@ -7,6 +7,7 @@ export interface AuthResponse {
   email: string;
   phone?: string;
   role: string;
+  avatar?: string;
 }
 
 export const authApi = {
@@ -15,4 +16,28 @@ export const authApi = {
 
   register: (name: string, email: string, password: string, phone: string) =>
     apiClient.post<AuthResponse>('/api/auth/register', { name, email, password, phone }),
+
+  getMe: (token: string) =>
+    apiClient.get<AuthResponse>('/api/auth/me', token),
+
+  updateMe: (data: { name?: string; phone?: string }, token: string) =>
+    apiClient.put<AuthResponse>('/api/auth/me', data, token),
+
+  uploadAvatar: (file: File, token: string) => {
+    const form = new FormData();
+    form.append('file', file);
+    return apiClient.upload<AuthResponse>('/api/auth/me/photo', form, token);
+  },
+
+  getAllUsers: (token: string) =>
+    apiClient.get<AuthResponse[]>('/api/auth/users', token),
+
+  adminUpdateUser: (id: string, data: { name?: string; phone?: string }, token: string) =>
+    apiClient.put<AuthResponse>(`/api/auth/users/${id}`, data, token),
+
+  adminUploadUserAvatar: (id: string, file: File, token: string) => {
+    const form = new FormData();
+    form.append('file', file);
+    return apiClient.upload<AuthResponse>(`/api/auth/users/${id}/photo`, form, token);
+  },
 };

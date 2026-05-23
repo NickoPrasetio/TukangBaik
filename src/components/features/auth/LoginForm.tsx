@@ -43,7 +43,7 @@ export default function LoginForm() {
     if (success) {
       router.push('/dashboard');
     } else {
-      setErrors({ general: 'Email atau password salah. Coba: demo@example.com / password123' });
+      setErrors({ general: 'Email atau password salah. Periksa kembali email dan password Anda.' });
     }
   }
 

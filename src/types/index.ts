@@ -16,7 +16,7 @@ export interface Review {
   date: string;
 }
 
-export interface Nurse {
+export interface Worker {
   id: string;
   name: string;
   avatar: string;
@@ -33,7 +33,7 @@ export interface Nurse {
 }
 
 export interface BookingRequest {
-  nurseId: string;
+  workerId: string;
   startDate: string;
   endDate: string;
   notes?: string;
