@@ -12,6 +12,7 @@ import { UserType } from '@/lib/schemas/auth.schema';
 import { LocationState } from '@/hooks/useLocation';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
+import { useAuthStore } from '@/store/authStore';
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -166,7 +167,10 @@ function LocationWidget({ status, latitude, longitude, errorMsg, retry }: Locati
 export default function SignupForm() {
   const router = useRouter();
   const { register, errors, isSubmitting, submitError, userType, selectUserType, location, onSubmit } =
-    useSignupForm(() => router.push('/dashboard'));
+    useSignupForm(() => {
+      const { user } = useAuthStore.getState();
+      router.push(user?.userType === 'TUKANG' ? '/tukang-dashboard' : '/dashboard');
+    });
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>

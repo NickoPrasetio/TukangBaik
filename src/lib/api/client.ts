@@ -34,6 +34,9 @@ export const apiClient = {
   put: <T>(path: string, body: unknown, token?: string) =>
     request<T>(path, { method: 'PUT', body: JSON.stringify(body), token }),
 
+  patch: <T>(path: string, body: unknown, token?: string) =>
+    request<T>(path, { method: 'PATCH', body: JSON.stringify(body), token }),
+
   upload: <T>(path: string, formData: FormData, token?: string) =>
     request<T>(path, { method: 'POST', body: formData, token }),
 };
