@@ -8,11 +8,11 @@ import ProfileModal from '@/components/features/profile/ProfileModal';
 
 export default function Navbar() {
   const router = useRouter();
-  const { user, logout } = useAuthStore();
+  const { user, clearSession } = useAuthStore();
   const [showProfile, setShowProfile] = useState(false);
 
   function handleLogout() {
-    logout();
+    clearSession();
     router.push('/login');
   }
 

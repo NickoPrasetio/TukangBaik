@@ -1,0 +1,18 @@
+/**
+ * Centralized query keys — satu tempat untuk semua cache keys.
+ * Memudahkan invalidation yang tepat sasaran dan menghindari typo.
+ */
+export const queryKeys = {
+  workers: {
+    all:  ['workers']                                                       as const,
+    list: (search?: string, available?: boolean) =>
+            ['workers', 'list', { search, available }]                      as const,
+    detail: (id: string) =>
+            ['workers', 'detail', id]                                       as const,
+  },
+  reviews: {
+    all:      ['reviews']                                                   as const,
+    byWorker: (workerId: string) =>
+                ['reviews', 'worker', workerId]                             as const,
+  },
+} as const;

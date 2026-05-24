@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import { QueryProvider } from '@/components/providers/QueryProvider';
 
 export const metadata: Metadata = {
   title: 'TukangKu – Booking Tukang Bangunan Terpercaya',
@@ -19,7 +20,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="id">
       <body>
-        <div className="app-wrapper">{children}</div>
+        <QueryProvider>
+          <div className="app-wrapper">{children}</div>
+        </QueryProvider>
       </body>
     </html>
   );

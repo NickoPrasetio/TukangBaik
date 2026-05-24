@@ -1,70 +1,54 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User } from '@/types';
-import { authApi } from '@/lib/api/auth.api';
 
-interface AuthState {
+// ─── ISP: pisah read state dari write actions ─────────────────────────────────
+
+interface AuthSessionState {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
-  signup: (name: string, email: string, password: string, phone: string, userType: string, latitude?: number, longitude?: number) => Promise<boolean>;
-  logout: () => void;
-  updateProfile: (data: { name?: string; phone?: string }) => Promise<boolean>;
-  updateAvatar: (file: File) => Promise<boolean>;
 }
 
-function toUser(res: { id: string; name: string; email: string; phone?: string; role: string; avatar?: string; userType?: string; latitude?: number; longitude?: number }): User {
-  return { id: res.id, name: res.name, email: res.email, phone: res.phone, role: res.role, avatar: res.avatar, userType: res.userType, latitude: res.latitude, longitude: res.longitude };
+interface AuthSessionActions {
+  /** Dipanggil setelah login/signup berhasil */
+  setSession: (user: User, token: string) => void;
+  /** Dipanggil saat logout */
+  clearSession: () => void;
+  /** Dipanggil setelah update profile/avatar — partial update */
+  setUser: (partial: Partial<User>) => void;
 }
 
-export const useAuthStore = create<AuthState>()(
+type AuthStore = AuthSessionState & AuthSessionActions;
+
+// ─── Store — HANYA menyimpan dan memutasi state ───────────────────────────────
+// Tidak ada API call, tidak ada business logic, tidak ada navigation.
+
+export const useAuthStore = create<AuthStore>()(
   persist(
-    (set, get) => ({
-      user: null,
-      token: null,
+    (set) => ({
+      // State
+      user:            null,
+      token:           null,
       isAuthenticated: false,
-      isAdmin: false,
+      isAdmin:         false,
 
-      login: async (email, password) => {
-        try {
-          const res = await authApi.login(email, password);
-          set({ user: toUser(res), token: res.token, isAuthenticated: true, isAdmin: res.role === 'ROLE_ADMIN' });
-          return true;
-        } catch { return false; }
-      },
+      // Pure state mutations
+      setSession: (user, token) =>
+        set({
+          user,
+          token,
+          isAuthenticated: true,
+          isAdmin: user.role === 'ROLE_ADMIN',
+        }),
 
-      signup: async (name, email, password, phone, userType, latitude, longitude) => {
-        try {
-          const res = await authApi.register(name, email, password, phone, userType, latitude, longitude);
-          set({ user: toUser(res), token: res.token, isAuthenticated: true, isAdmin: res.role === 'ROLE_ADMIN' });
-          return true;
-        } catch { return false; }
-      },
+      clearSession: () =>
+        set({ user: null, token: null, isAuthenticated: false, isAdmin: false }),
 
-      logout: () => set({ user: null, token: null, isAuthenticated: false, isAdmin: false }),
-
-      updateProfile: async (data) => {
-        const { token } = get();
-        if (!token) return false;
-        try {
-          const res = await authApi.updateMe(data, token);
-          set((s) => ({ user: { ...s.user!, ...toUser(res) } }));
-          return true;
-        } catch { return false; }
-      },
-
-      updateAvatar: async (file) => {
-        const { token } = get();
-        if (!token) return false;
-        try {
-          const res = await authApi.uploadAvatar(file, token);
-          set((s) => ({ user: { ...s.user!, avatar: res.avatar } }));
-          return true;
-        } catch { return false; }
-      },
+      setUser: (partial) =>
+        set((s) => ({ user: s.user ? { ...s.user, ...partial } : null })),
     }),
-    { name: 'auth-storage' }
-  )
+    { name: 'auth-storage' },
+  ),
 );

@@ -1,40 +1,28 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Search, SlidersHorizontal, Plus } from 'lucide-react';
+import { useState } from 'react';
+import { Search, SlidersHorizontal, Plus, RefreshCw } from 'lucide-react';
 import { useWorkerStore } from '@/store/workerStore';
 import { useAuthStore } from '@/store/authStore';
+import { useWorkersQuery } from '@/hooks/useWorkersQuery';
 import { Worker } from '@/types';
 import WorkerCard from './WorkerCard';
 import WorkerDetailModal from './WorkerDetailModal';
 import AddWorkerModal from './AddWorkerModal';
+import { useDebounce } from '@/hooks/useDebounce';
 
 export default function WorkerList() {
-  const {
-    workers,
-    searchQuery,
-    filterAvailable,
-    loading,
-    error,
-    setSearchQuery,
-    setFilterAvailable,
-    fetchWorkers,
-  } = useWorkerStore();
-
+  const { searchQuery, filterAvailable, setSearchQuery, setFilterAvailable } = useWorkerStore();
   const isAdmin = useAuthStore((s) => s.isAdmin);
 
+  const [inputValue,    setInputValue]    = useState(searchQuery);
   const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [inputValue, setInputValue] = useState(searchQuery);
+  const [showAddModal,   setShowAddModal]   = useState(false);
 
-  useEffect(() => {
-    fetchWorkers();
-  }, [searchQuery, filterAvailable]);
+  // Debounce input → update store → query key berubah → React Query fetch
+  useDebounce(inputValue, 400, setSearchQuery);
 
-  useEffect(() => {
-    const timer = setTimeout(() => setSearchQuery(inputValue), 400);
-    return () => clearTimeout(timer);
-  }, [inputValue]);
+  const { data: workers = [], isLoading, isError, refetch } = useWorkersQuery();
 
   return (
     <div className="flex flex-col gap-4">
@@ -72,14 +60,13 @@ export default function WorkerList() {
             onClick={() => setShowAddModal(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-blue-500 text-white border border-blue-500"
           >
-            <Plus size={15} />
-            Tambah Tukang
+            <Plus size={15} /> Tambah Tukang
           </button>
         )}
       </div>
 
-      {/* Loading state */}
-      {loading && (
+      {/* Loading skeleton */}
+      {isLoading && (
         <div className="flex flex-col gap-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="bg-white rounded-3xl h-36 animate-pulse border border-gray-100" />
@@ -88,24 +75,27 @@ export default function WorkerList() {
       )}
 
       {/* Error state */}
-      {error && !loading && (
+      {isError && !isLoading && (
         <div className="text-center py-10">
-          <p className="text-gray-500">{error}</p>
-          <button onClick={fetchWorkers} className="mt-2 text-blue-500 text-sm font-medium">
-            Coba lagi
+          <p className="text-gray-500 mb-2">Gagal memuat data tukang</p>
+          <button
+            onClick={() => refetch()}
+            className="inline-flex items-center gap-1.5 text-blue-500 text-sm font-medium hover:underline"
+          >
+            <RefreshCw size={14} /> Coba lagi
           </button>
         </div>
       )}
 
       {/* Result count */}
-      {!loading && !error && (
+      {!isLoading && !isError && (
         <p className="text-sm text-gray-500">
           <span className="font-semibold text-gray-800">{workers.length}</span> tukang ditemukan
         </p>
       )}
 
       {/* List */}
-      {!loading && !error && workers.length > 0 && (
+      {!isLoading && !isError && workers.length > 0 && (
         <div className="flex flex-col gap-3">
           {workers.map((worker) => (
             <WorkerCard key={worker.id} worker={worker} onView={setSelectedWorker} />
@@ -113,7 +103,8 @@ export default function WorkerList() {
         </div>
       )}
 
-      {!loading && !error && workers.length === 0 && (
+      {/* Empty state */}
+      {!isLoading && !isError && workers.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <span className="text-5xl mb-4">🔍</span>
           <p className="text-gray-600 font-medium">Tidak ada tukang ditemukan</p>
@@ -124,7 +115,6 @@ export default function WorkerList() {
       {selectedWorker && (
         <WorkerDetailModal worker={selectedWorker} onClose={() => setSelectedWorker(null)} />
       )}
-
       {showAddModal && (
         <AddWorkerModal onClose={() => setShowAddModal(false)} />
       )}

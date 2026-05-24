@@ -1,91 +1,40 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Mail, Lock } from 'lucide-react';
-import { useAuthStore } from '@/store/authStore';
+import { useLoginForm } from '@/hooks/useLoginForm';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 
-interface FormErrors {
-  email?: string;
-  password?: string;
-  general?: string;
-}
-
 export default function LoginForm() {
   const router = useRouter();
-  const { login } = useAuthStore();
-
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<FormErrors>({});
-
-  function validate(): boolean {
-    const newErrors: FormErrors = {};
-    if (!email) newErrors.email = 'Email wajib diisi';
-    else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = 'Format email tidak valid';
-    if (!password) newErrors.password = 'Password wajib diisi';
-    else if (password.length < 6) newErrors.password = 'Password minimal 6 karakter';
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!validate()) return;
-    setLoading(true);
-    setErrors({});
-    const success = await login(email, password);
-    setLoading(false);
-    if (success) {
-      router.push('/dashboard');
-    } else {
-      setErrors({ general: 'Email atau password salah. Periksa kembali email dan password Anda.' });
-    }
-  }
+  const { register, errors, isSubmitting, submitError, onSubmit } =
+    useLoginForm(() => router.push('/dashboard'));
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
-      <Input
-        label="Email"
-        type="email"
-        placeholder="email@contoh.com"
-        icon={<Mail size={18} />}
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        error={errors.email}
-        autoComplete="email"
-      />
+    <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
+      <Input label="Email" type="email" placeholder="email@contoh.com"
+        icon={<Mail size={18} />} error={errors.email?.message} autoComplete="email"
+        {...register('email')} />
 
-      <Input
-        label="Password"
-        type="password"
-        placeholder="Masukkan password"
-        icon={<Lock size={18} />}
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        error={errors.password}
-        autoComplete="current-password"
-      />
+      <Input label="Password" type="password" placeholder="Masukkan password"
+        icon={<Lock size={18} />} error={errors.password?.message} autoComplete="current-password"
+        {...register('password')} />
 
-      {errors.general && (
-        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3">
-          <p className="text-sm text-red-600">{errors.general}</p>
+      {submitError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+          <p className="text-sm text-red-600">{submitError}</p>
         </div>
       )}
 
-      <Button type="submit" loading={loading} fullWidth size="lg" className="mt-2">
+      <Button type="submit" loading={isSubmitting} fullWidth size="lg" className="mt-2">
         Masuk
       </Button>
 
       <p className="text-center text-sm text-gray-500">
         Belum punya akun?{' '}
-        <Link href="/signup" className="font-semibold text-blue-500 hover:underline">
-          Daftar sekarang
-        </Link>
+        <Link href="/signup" className="font-semibold text-blue-500 hover:underline">Daftar sekarang</Link>
       </p>
     </form>
   );

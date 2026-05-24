@@ -1,65 +1,42 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { X, MapPin, Star, ChevronDown } from 'lucide-react';
-import { Worker, Review } from '@/types';
-import { useAuthStore } from '@/store/authStore';
-import { useWorkerStore } from '@/store/workerStore';
-import { reviewApi } from '@/lib/api/review.api';
+import { Worker } from '@/types';
+import { useReviewsQuery } from '@/hooks/useReviewsQuery';
+import { useSubmitReviewMutation } from '@/hooks/useSubmitReviewMutation';
 import Badge, { getVariantByIndex } from '@/components/ui/Badge';
 import StarRating from '@/components/ui/StarRating';
 import Button from '@/components/ui/Button';
 
-interface WorkerDetailModalProps {
-  worker: Worker;
+interface Props {
+  worker:  Worker;
   onClose: () => void;
 }
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
+    style: 'currency', currency: 'IDR', minimumFractionDigits: 0,
   }).format(price);
 }
 
-export default function WorkerDetailModal({ worker, onClose }: WorkerDetailModalProps) {
-  const { user } = useAuthStore();
-  const { updateWorkerLocally } = useWorkerStore();
-
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [reviewsLoading, setReviewsLoading] = useState(true);
+export default function WorkerDetailModal({ worker, onClose }: Props) {
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [selectedRating, setSelectedRating] = useState(0);
-  const [comment, setComment] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [comment,        setComment]        = useState('');
 
-  useEffect(() => {
-    reviewApi.getByWorker(worker.id)
-      .then(setReviews)
-      .finally(() => setReviewsLoading(false));
-  }, [worker.id]);
+  // ─── Server state via React Query ───────────────────────────────────────────
+  const { data: reviews = [], isLoading: reviewsLoading } = useReviewsQuery(worker.id);
+
+  const submitReview = useSubmitReviewMutation(worker.id);
+  const submitted    = submitReview.isSuccess;
 
   async function handleSubmitReview() {
-    if (!selectedRating || !comment.trim() || !user) return;
-    setSubmitting(true);
-    try {
-      const newReview = await reviewApi.create(worker.id, user.name, selectedRating, comment.trim());
-      const updated = [newReview, ...reviews];
-      setReviews(updated);
-      const newAvg = updated.reduce((s, r) => s + r.rating, 0) / updated.length;
-      updateWorkerLocally(worker.id, {
-        rating: Math.round(newAvg * 10) / 10,
-        totalReviews: updated.length,
-      });
-      setSubmitted(true);
-      setShowReviewForm(false);
-    } catch {
-      alert('Gagal mengirim ulasan. Coba lagi.');
-    } finally {
-      setSubmitting(false);
-    }
+    if (!selectedRating || !comment.trim()) return;
+    submitReview.mutate(
+      { rating: selectedRating, comment: comment.trim() },
+      { onSuccess: () => setShowReviewForm(false) },
+    );
   }
 
   return (
@@ -108,9 +85,9 @@ export default function WorkerDetailModal({ worker, onClose }: WorkerDetailModal
           {/* Stats */}
           <div className="grid grid-cols-3 gap-3 mb-5">
             {[
-              { label: 'Usia', value: `${worker.age} th` },
-              { label: 'Pengalaman', value: `${worker.experience} th` },
-              { label: 'Ulasan', value: worker.totalReviews.toString() },
+              { label: 'Usia',        value: `${worker.age} th` },
+              { label: 'Pengalaman',  value: `${worker.experience} th` },
+              { label: 'Ulasan',      value: worker.totalReviews.toString() },
             ].map(({ label, value }) => (
               <div key={label} className="bg-blue-50 rounded-2xl py-3 px-2 text-center">
                 <p className="text-base font-bold text-blue-700">{value}</p>
@@ -169,12 +146,7 @@ export default function WorkerDetailModal({ worker, onClose }: WorkerDetailModal
             {showReviewForm && !submitted && (
               <div className="bg-blue-50 rounded-2xl p-4 mb-4">
                 <p className="text-sm font-medium text-gray-700 mb-2">Rating kamu:</p>
-                <StarRating
-                  rating={selectedRating}
-                  interactive
-                  size="lg"
-                  onRate={setSelectedRating}
-                />
+                <StarRating rating={selectedRating} interactive size="lg" onRate={setSelectedRating} />
                 <textarea
                   className="w-full mt-3 p-3 rounded-xl border border-blue-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none bg-white"
                   placeholder="Ceritakan pengalamanmu..."
@@ -182,11 +154,14 @@ export default function WorkerDetailModal({ worker, onClose }: WorkerDetailModal
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                 />
+                {submitReview.isError && (
+                  <p className="text-xs text-red-500 mt-1">Gagal mengirim ulasan. Coba lagi.</p>
+                )}
                 <Button
                   size="sm"
                   fullWidth
                   className="mt-2"
-                  loading={submitting}
+                  loading={submitReview.isPending}
                   disabled={!selectedRating || !comment.trim()}
                   onClick={handleSubmitReview}
                 >
