@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   User, Mail, Lock, Phone, MapPin,
@@ -8,10 +9,13 @@ import {
   AlertCircle, Loader2, RefreshCw,
 } from 'lucide-react';
 import { useSignupForm } from '@/hooks/useSignupForm';
+import { useGoogleLoginMutation, GOOGLE_PENDING_KEY } from '@/hooks/useGoogleLoginMutation';
 import { UserType } from '@/lib/schemas/auth.schema';
 import { LocationState } from '@/hooks/useLocation';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
+import GoogleLoginButton from './GoogleLoginButton';
+import GoogleSignupForm from './GoogleSignupForm';
 import { useAuthStore } from '@/store/authStore';
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -162,18 +166,45 @@ function LocationWidget({ status, latitude, longitude, errorMsg, retry }: Locati
   );
 }
 
-// ─── Main — komponen yang pegang navigasi ─────────────────────────────────────
+// ─── Regular signup form (manual email/password) ──────────────────────────────
 
-export default function SignupForm() {
+function RegularSignupForm() {
   const router = useRouter();
+
+  function handleSuccess() {
+    const { user } = useAuthStore.getState();
+    router.push(user?.userType === 'TUKANG' ? '/tukang-dashboard' : '/dashboard');
+  }
+
   const { register, errors, isSubmitting, submitError, userType, selectUserType, location, onSubmit } =
-    useSignupForm(() => {
-      const { user } = useAuthStore.getState();
-      router.push(user?.userType === 'TUKANG' ? '/tukang-dashboard' : '/dashboard');
-    });
+    useSignupForm(handleSuccess);
+
+  const { mutate: googleLogin, isLoading: googleLoading, error: googleError } =
+    useGoogleLoginMutation(handleSuccess);
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
+
+      {/* Google Sign-Up */}
+      <GoogleLoginButton
+        onToken={googleLogin}
+        isLoading={googleLoading}
+        label="Daftar dengan Google"
+      />
+
+      {googleError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+          <p className="text-sm text-red-600">{googleError}</p>
+        </div>
+      )}
+
+      {/* Divider */}
+      <div className="flex items-center gap-3">
+        <div className="flex-1 h-px bg-gray-200" />
+        <span className="text-xs text-gray-400 font-medium">atau daftar manual</span>
+        <div className="flex-1 h-px bg-gray-200" />
+      </div>
+
       <UserTypeSelector
         value={userType}
         onSelect={selectUserType}
@@ -224,4 +255,34 @@ export default function SignupForm() {
       </p>
     </form>
   );
+}
+
+// ─── Router — memilih form yang tepat ────────────────────────────────────────
+
+/**
+ * SignupForm mendeteksi apakah ada data Google pending di sessionStorage.
+ * - Ada  → tampilkan GoogleSignupForm (nama/email sudah terisi dari Google)
+ * - Tidak → tampilkan RegularSignupForm (manual daftar + tombol Google)
+ */
+export default function SignupForm() {
+  const [mode, setMode] = useState<'loading' | 'google' | 'regular'>('loading');
+
+  useEffect(() => {
+    const hasPending = !!sessionStorage.getItem(GOOGLE_PENDING_KEY);
+    setMode(hasPending ? 'google' : 'regular');
+  }, []);
+
+  if (mode === 'loading') {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 size={24} className="animate-spin text-orange-400" />
+      </div>
+    );
+  }
+
+  if (mode === 'google') {
+    return <GoogleSignupForm />;
+  }
+
+  return <RegularSignupForm />;
 }

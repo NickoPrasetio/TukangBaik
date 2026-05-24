@@ -1,4 +1,4 @@
-import { IAuthRepository, SignupInput, AuthSession } from '@/domain/auth/IAuthRepository';
+import { IAuthRepository, SignupInput, AuthSession, GoogleCheckResult } from '@/domain/auth/IAuthRepository';
 import { AuthResult, AuthError } from '@/domain/auth/AuthError';
 import { authApi } from '@/lib/api/auth.api';
 import { User } from '@/types';
@@ -49,6 +49,54 @@ export class AuthRepository implements IAuthRepository {
   async login(email: string, password: string): Promise<AuthResult<AuthSession>> {
     try {
       const res = await authApi.login(email, password);
+      return { success: true, data: { user: mapUser(res), token: res.token! } };
+    } catch (err) {
+      return { success: false, error: mapError(err) };
+    }
+  }
+
+  async googleCheck(accessToken: string): Promise<AuthResult<GoogleCheckResult>> {
+    try {
+      const res = await authApi.googleCheck(accessToken);
+      if (res.newUser) {
+        return {
+          success: true,
+          data: {
+            isNewUser: true,
+            name: res.name ?? '',
+            email: res.email ?? '',
+            avatar: res.avatar,
+          },
+        };
+      }
+      return {
+        success: true,
+        data: {
+          isNewUser: false,
+          session: {
+            user: mapUser({
+              id: res.id!,
+              name: res.name!,
+              email: res.email!,
+              phone: res.phone,
+              role: res.role!,
+              avatar: res.avatar,
+              userType: res.userType,
+              latitude: res.latitude,
+              longitude: res.longitude,
+            }),
+            token: res.token!,
+          },
+        },
+      };
+    } catch (err) {
+      return { success: false, error: mapError(err) };
+    }
+  }
+
+  async googleComplete(accessToken: string, userType: string, phone?: string): Promise<AuthResult<AuthSession>> {
+    try {
+      const res = await authApi.googleComplete(accessToken, userType, phone);
       return { success: true, data: { user: mapUser(res), token: res.token! } };
     } catch (err) {
       return { success: false, error: mapError(err) };

@@ -12,8 +12,8 @@ import TukangNavbar from './TukangNavbar';
 // ─── WorkStatus Option Card ───────────────────────────────────────────────────
 
 interface StatusOptionProps {
-  value: WorkStatus;
-  current: WorkStatus;
+  value: 'OPEN' | 'CLOSED';    // Tukang hanya bisa pilih OPEN atau CLOSED
+  current: WorkStatus;          // Current bisa BOOKED (diset sistem)
   disabled: boolean;
   onSelect: (s: WorkStatus) => void;
 }
@@ -108,10 +108,13 @@ export default function TukangDashboardContent() {
         {/* Status badge di banner */}
         <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1">
           <span className={`w-2 h-2 rounded-full ${
-            workStatus === 'OPEN' ? 'bg-green-300 animate-pulse' : 'bg-red-300'
+            workStatus === 'OPEN'   ? 'bg-green-300 animate-pulse' :
+            workStatus === 'BOOKED' ? 'bg-yellow-300' : 'bg-red-300'
           }`} />
           <span className="text-white text-xs font-semibold">
-            {workStatus === 'OPEN' ? 'Menerima Pekerjaan' : 'Tidak Menerima Pekerjaan'}
+            {workStatus === 'OPEN'   ? 'Menerima Pekerjaan' :
+             workStatus === 'BOOKED' ? 'Sedang Dalam Pekerjaan' :
+             'Tidak Menerima Pekerjaan'}
           </span>
         </div>
       </div>

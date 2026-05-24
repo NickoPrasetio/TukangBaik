@@ -13,12 +13,41 @@ export interface AuthResponse {
   longitude?: number;
 }
 
+/**
+ * Response dari POST /api/auth/google.
+ * newUser == true  → user belum ada; hanya name/email/avatar yang diisi.
+ * newUser == false → user sudah ada; token + profil lengkap disertakan.
+ */
+export interface GoogleCheckResponse {
+  newUser: boolean;
+  // existing user
+  token?: string;
+  id?: string;
+  phone?: string;
+  role?: string;
+  userType?: string;
+  latitude?: number;
+  longitude?: number;
+  // always present (from Google)
+  name?: string;
+  email?: string;
+  avatar?: string;
+}
+
 export const authApi = {
   login: (email: string, password: string) =>
     apiClient.post<AuthResponse>('/api/auth/login', { email, password }),
 
   register: (name: string, email: string, password: string, phone: string, userType: string, latitude?: number, longitude?: number) =>
     apiClient.post<AuthResponse>('/api/auth/register', { name, email, password, phone, userType, latitude, longitude }),
+
+  /** Step 1: cek apakah user Google sudah ada di DB */
+  googleCheck: (accessToken: string) =>
+    apiClient.post<GoogleCheckResponse>('/api/auth/google', { accessToken }),
+
+  /** Step 2: selesaikan registrasi (hanya untuk user baru) */
+  googleComplete: (accessToken: string, userType: string, phone?: string) =>
+    apiClient.post<AuthResponse>('/api/auth/google/complete', { accessToken, userType, phone }),
 
   getMe: (token: string) =>
     apiClient.get<AuthResponse>('/api/auth/me', token),

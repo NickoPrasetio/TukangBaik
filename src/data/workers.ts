@@ -13,6 +13,7 @@ export const DUMMY_WORKERS: Worker[] = [
     location: 'Jakarta Selatan',
     pricePerDay: 350000,
     isAvailable: true,
+    workStatus: 'OPEN',
     bio: 'Tukang berpengalaman dengan keahlian pasang keramik dan plesteran dinding. Mengerjakan lebih dari 200 proyek renovasi rumah di Jakarta.',
     reviews: [
       {
@@ -45,6 +46,7 @@ export const DUMMY_WORKERS: Worker[] = [
     location: 'Jakarta Barat',
     pricePerDay: 300000,
     isAvailable: true,
+    workStatus: 'OPEN',
     bio: 'Tukang muda spesialis pengecatan dinding dan pemasangan plafon gypsum. Hasil rapi dan bersih menggunakan bahan berkualitas.',
     reviews: [
       {
@@ -69,6 +71,7 @@ export const DUMMY_WORKERS: Worker[] = [
     location: 'Jakarta Pusat',
     pricePerDay: 450000,
     isAvailable: false,
+    workStatus: 'CLOSED',
     bio: 'Tukang senior dengan pengalaman 20 tahun di bidang konstruksi bangunan. Ahli dalam pengerjaan struktur beton dan renovasi total rumah.',
     reviews: [
       {
@@ -93,6 +96,7 @@ export const DUMMY_WORKERS: Worker[] = [
     location: 'Tangerang Selatan',
     pricePerDay: 380000,
     isAvailable: true,
+    workStatus: 'OPEN',
     bio: 'Tukang spesialis instalasi listrik dan pipa air bersertifikasi. Berpengalaman dalam pemasangan sistem sanitasi dan renovasi kamar mandi.',
     reviews: [
       {
@@ -117,6 +121,7 @@ export const DUMMY_WORKERS: Worker[] = [
     location: 'Bekasi',
     pricePerDay: 280000,
     isAvailable: true,
+    workStatus: 'OPEN',
     bio: 'Tukang ramah dan teliti dengan spesialisasi renovasi dapur dan finishing interior. Bekerja cepat dan rapi sesuai permintaan pelanggan.',
     reviews: [
       {
@@ -141,6 +146,7 @@ export const DUMMY_WORKERS: Worker[] = [
     location: 'Depok',
     pricePerDay: 500000,
     isAvailable: true,
+    workStatus: 'OPEN',
     bio: 'Tukang ahli perbaikan atap bocor dan waterproofing. Menggunakan material anti bocor berkualitas tinggi dengan garansi pekerjaan.',
     reviews: [
       {
