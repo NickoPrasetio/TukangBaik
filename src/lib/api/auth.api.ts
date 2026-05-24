@@ -8,14 +8,17 @@ export interface AuthResponse {
   phone?: string;
   role: string;
   avatar?: string;
+  userType?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export const authApi = {
   login: (email: string, password: string) =>
     apiClient.post<AuthResponse>('/api/auth/login', { email, password }),
 
-  register: (name: string, email: string, password: string, phone: string) =>
-    apiClient.post<AuthResponse>('/api/auth/register', { name, email, password, phone }),
+  register: (name: string, email: string, password: string, phone: string, userType: string, latitude?: number, longitude?: number) =>
+    apiClient.post<AuthResponse>('/api/auth/register', { name, email, password, phone, userType, latitude, longitude }),
 
   getMe: (token: string) =>
     apiClient.get<AuthResponse>('/api/auth/me', token),

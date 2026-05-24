@@ -9,14 +9,14 @@ interface AuthState {
   isAuthenticated: boolean;
   isAdmin: boolean;
   login: (email: string, password: string) => Promise<boolean>;
-  signup: (name: string, email: string, password: string, phone: string) => Promise<boolean>;
+  signup: (name: string, email: string, password: string, phone: string, userType: string, latitude?: number, longitude?: number) => Promise<boolean>;
   logout: () => void;
   updateProfile: (data: { name?: string; phone?: string }) => Promise<boolean>;
   updateAvatar: (file: File) => Promise<boolean>;
 }
 
-function toUser(res: { id: string; name: string; email: string; phone?: string; role: string; avatar?: string }): User {
-  return { id: res.id, name: res.name, email: res.email, phone: res.phone, role: res.role, avatar: res.avatar };
+function toUser(res: { id: string; name: string; email: string; phone?: string; role: string; avatar?: string; userType?: string; latitude?: number; longitude?: number }): User {
+  return { id: res.id, name: res.name, email: res.email, phone: res.phone, role: res.role, avatar: res.avatar, userType: res.userType, latitude: res.latitude, longitude: res.longitude };
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -35,9 +35,9 @@ export const useAuthStore = create<AuthState>()(
         } catch { return false; }
       },
 
-      signup: async (name, email, password, phone) => {
+      signup: async (name, email, password, phone, userType, latitude, longitude) => {
         try {
-          const res = await authApi.register(name, email, password, phone);
+          const res = await authApi.register(name, email, password, phone, userType, latitude, longitude);
           set({ user: toUser(res), token: res.token, isAuthenticated: true, isAdmin: res.role === 'ROLE_ADMIN' });
           return true;
         } catch { return false; }

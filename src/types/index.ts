@@ -5,6 +5,9 @@ export interface User {
   phone?: string;
   avatar?: string;
   role?: string;
+  userType?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface Review {
