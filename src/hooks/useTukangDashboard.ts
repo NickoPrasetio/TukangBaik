@@ -1,14 +1,17 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { WorkStatus } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import {
+  GetTukangProfileUseCase,
   UpdateTukangStatusUseCase,
   UpdateTukangSalaryUseCase,
   UpdateTukangLocationUseCase,
 } from '@/domain/tukang/usecases';
 
 type LocationStatus = 'idle' | 'loading' | 'success' | 'error';
+type ProfileLoadStatus = 'idle' | 'loading' | 'success' | 'error';
 
 interface LocationCoords {
   lat: number;
@@ -16,37 +19,43 @@ interface LocationCoords {
 }
 
 interface UseTukangDashboardState {
-  isAccepting: boolean;
+  // Status pekerjaan
+  workStatus: WorkStatus;
   isSavingStatus: boolean;
   statusError: string;
+  profileLoadStatus: ProfileLoadStatus;
 
+  // Gaji harian
   dailySalary: string;
   isSavingSalary: boolean;
   salarySaved: boolean;
   salaryError: string;
 
+  // Lokasi
   locStatus: LocationStatus;
   locCoords: LocationCoords | null;
   locError: string;
 }
 
 interface UseTukangDashboardActions {
-  toggleAccepting: () => Promise<void>;
+  setWorkStatus: (status: WorkStatus) => Promise<void>;
   setDailySalary: (value: string) => void;
   saveSalary: () => Promise<void>;
   syncLocation: () => Promise<void>;
 }
 
 export function useTukangDashboard(): UseTukangDashboardState & UseTukangDashboardActions {
-  const { token, user } = useAuthStore((s) => ({ token: s.token, user: s.user }));
+  const token = useAuthStore((s) => s.token);
+  const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
 
-  // Status Pekerjaan
-  const [isAccepting, setIsAccepting] = useState(false);
+  // Status pekerjaan
+  const [workStatus, setWorkStatusState] = useState<WorkStatus>('OPEN');
   const [isSavingStatus, setIsSavingStatus] = useState(false);
   const [statusError, setStatusError] = useState('');
+  const [profileLoadStatus, setProfileLoadStatus] = useState<ProfileLoadStatus>('idle');
 
-  // Gaji Harian
+  // Gaji harian
   const [dailySalary, setDailySalary] = useState('');
   const [isSavingSalary, setIsSavingSalary] = useState(false);
   const [salarySaved, setSalarySaved] = useState(false);
@@ -57,29 +66,52 @@ export function useTukangDashboard(): UseTukangDashboardState & UseTukangDashboa
   const [locCoords, setLocCoords] = useState<LocationCoords | null>(null);
   const [locError, setLocError] = useState('');
 
-  // ─── Toggles accepting work ────────────────────────────────────────────────
-  const toggleAccepting = useCallback(async () => {
+  // ─── Load profil tukang saat mount ────────────────────────────────────────
+  useEffect(() => {
+    if (!token) return;
+
+    const loadProfile = async () => {
+      setProfileLoadStatus('loading');
+      const useCase = new GetTukangProfileUseCase();
+      const result = await useCase.execute(token);
+
+      if (result.success && result.data) {
+        setWorkStatusState(result.data.workStatus ?? 'OPEN');
+        if (result.data.pricePerDay) {
+          setDailySalary(String(result.data.pricePerDay));
+        }
+        setProfileLoadStatus('success');
+      } else {
+        // Profil belum terhubung — tampilkan default tanpa error ke user
+        setProfileLoadStatus('error');
+      }
+    };
+
+    loadProfile();
+  }, [token]);
+
+  // ─── Update work status (OPEN / CLOSED) ───────────────────────────────────
+  const setWorkStatus = useCallback(async (newStatus: WorkStatus) => {
     if (!token) {
       setStatusError('Token tidak ditemukan');
       return;
     }
 
-    const newState = !isAccepting;
     setIsSavingStatus(true);
     setStatusError('');
 
     const useCase = new UpdateTukangStatusUseCase();
-    const result = await useCase.execute(newState, token);
+    const result = await useCase.execute(newStatus, token);
 
     if (result.success) {
-      setIsAccepting(newState);
+      setWorkStatusState(newStatus);
     } else {
-      setStatusError(result.error || 'Gagal mengupdate status');
+      setStatusError(result.error ?? 'Gagal mengupdate status');
     }
     setIsSavingStatus(false);
-  }, [isAccepting, token]);
+  }, [token]);
 
-  // ─── Saves daily salary ────────────────────────────────────────────────────
+  // ─── Simpan gaji harian ───────────────────────────────────────────────────
   const saveSalary = useCallback(async () => {
     if (!token || !dailySalary) {
       setSalaryError('Gaji harus diisi');
@@ -102,12 +134,12 @@ export function useTukangDashboard(): UseTukangDashboardState & UseTukangDashboa
       setSalarySaved(true);
       setTimeout(() => setSalarySaved(false), 2000);
     } else {
-      setSalaryError(result.error || 'Gagal menyimpan gaji');
+      setSalaryError(result.error ?? 'Gagal menyimpan gaji');
     }
     setIsSavingSalary(false);
   }, [token, dailySalary]);
 
-  // ─── Syncs current location ────────────────────────────────────────────────
+  // ─── Sinkronisasi lokasi GPS ──────────────────────────────────────────────
   const syncLocation = useCallback(async () => {
     if (!navigator.geolocation) {
       setLocStatus('error');
@@ -137,7 +169,7 @@ export function useTukangDashboard(): UseTukangDashboardState & UseTukangDashboa
           setUser({ latitude: coords.lat, longitude: coords.lng });
         } else {
           setLocStatus('error');
-          setLocError(result.error || 'Gagal menyimpan lokasi');
+          setLocError(result.error ?? 'Gagal menyimpan lokasi');
         }
       },
       (err) => {
@@ -148,9 +180,10 @@ export function useTukangDashboard(): UseTukangDashboardState & UseTukangDashboa
   }, [token, setUser]);
 
   return {
-    isAccepting,
+    workStatus,
     isSavingStatus,
     statusError,
+    profileLoadStatus,
     dailySalary,
     isSavingSalary,
     salarySaved,
@@ -158,7 +191,7 @@ export function useTukangDashboard(): UseTukangDashboardState & UseTukangDashboa
     locStatus,
     locCoords,
     locError,
-    toggleAccepting,
+    setWorkStatus,
     setDailySalary,
     saveSalary,
     syncLocation,

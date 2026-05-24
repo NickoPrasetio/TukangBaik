@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { X, MapPin, Star, ChevronDown } from 'lucide-react';
 import { Worker } from '@/types';
 import { useReviewsQuery } from '@/hooks/useReviewsQuery';
@@ -21,6 +22,7 @@ function formatPrice(price: number): string {
 }
 
 export default function WorkerDetailModal({ worker, onClose }: Props) {
+  const router = useRouter();
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [selectedRating, setSelectedRating] = useState(0);
   const [comment,        setComment]        = useState('');
@@ -64,8 +66,11 @@ export default function WorkerDetailModal({ worker, onClose }: Props) {
               <div className="w-20 h-20 rounded-2xl overflow-hidden bg-blue-50">
                 <img src={worker.avatar} alt={worker.name} className="w-full h-full object-cover" />
               </div>
-              {worker.isAvailable && (
+              {worker.workStatus === 'OPEN' && (
                 <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white" />
+              )}
+              {worker.workStatus === 'BOOKED' && (
+                <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-orange-400 rounded-full border-2 border-white" />
               )}
             </div>
             <div>
@@ -120,11 +125,18 @@ export default function WorkerDetailModal({ worker, onClose }: Props) {
             </div>
             <Button
               variant="secondary"
-              disabled={!worker.isAvailable}
+              disabled={worker.workStatus !== 'OPEN'}
               size="md"
-              onClick={() => alert('Fitur booking segera hadir!')}
+              onClick={() => {
+                onClose();
+                router.push(`/booking/${worker.id}`);
+              }}
             >
-              {worker.isAvailable ? 'Book Sekarang' : 'Tidak Tersedia'}
+              {worker.workStatus === 'OPEN'
+                ? 'Book Sekarang'
+                : worker.workStatus === 'BOOKED'
+                ? 'Sedang Booking'
+                : 'Tidak Tersedia'}
             </Button>
           </div>
 

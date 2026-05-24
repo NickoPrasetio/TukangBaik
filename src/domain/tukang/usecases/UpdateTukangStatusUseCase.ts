@@ -1,3 +1,4 @@
+import { WorkStatus } from '@/types';
 import { tukangApi } from '@/lib/api/tukang.api';
 
 export interface UpdateTukangStatusResult {
@@ -6,9 +7,9 @@ export interface UpdateTukangStatusResult {
 }
 
 export class UpdateTukangStatusUseCase {
-  async execute(isAvailable: boolean, token: string): Promise<UpdateTukangStatusResult> {
+  async execute(status: WorkStatus, token: string): Promise<UpdateTukangStatusResult> {
     try {
-      await tukangApi.updateStatus({ isAvailable }, token);
+      await tukangApi.updateStatus({ status }, token);
       return { success: true };
     } catch (err) {
       return {

@@ -1,3 +1,28 @@
+export type WorkStatus = 'OPEN' | 'CLOSED' | 'BOOKED';
+
+export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
+export type PaymentMethod = 'CASH';
+
+export interface Booking {
+  id: string;
+  workerId: string;
+  workerName?: string;
+  workerAvatar?: string;
+  customerId: string;
+  customerName: string;
+  address: string;
+  city: string;
+  latitude: number;
+  longitude: number;
+  bookingDate: string;
+  startTime: string;
+  durationDays: number;
+  paymentMethod: PaymentMethod;
+  status: BookingStatus;
+  notes?: string;
+  createdAt: string;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -31,6 +56,7 @@ export interface Worker {
   location: string;
   pricePerDay: number;
   isAvailable: boolean;
+  workStatus: WorkStatus;
   bio: string;
   reviews: Review[];
 }

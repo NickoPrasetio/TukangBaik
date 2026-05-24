@@ -15,4 +15,9 @@ export const queryKeys = {
     byWorker: (workerId: string) =>
                 ['reviews', 'worker', workerId]                             as const,
   },
+  bookings: {
+    all:  ['bookings']                                                      as const,
+    my:   ['bookings', 'my']                                                as const,
+    detail: (id: string) => ['bookings', 'detail', id]                     as const,
+  },
 } as const;

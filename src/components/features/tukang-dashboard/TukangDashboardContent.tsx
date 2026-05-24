@@ -4,16 +4,84 @@ import {
   MapPin, Briefcase, Wallet,
   CheckCircle2, XCircle, Loader2, RefreshCw, AlertCircle,
 } from 'lucide-react';
+import { WorkStatus } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import { useTukangDashboard } from '@/hooks/useTukangDashboard';
 import TukangNavbar from './TukangNavbar';
 
+// ─── WorkStatus Option Card ───────────────────────────────────────────────────
+
+interface StatusOptionProps {
+  value: WorkStatus;
+  current: WorkStatus;
+  disabled: boolean;
+  onSelect: (s: WorkStatus) => void;
+}
+
+function WorkStatusOption({ value, current, disabled, onSelect }: StatusOptionProps) {
+  const isSelected = value === current;
+  const isOpen = value === 'OPEN';
+
+  const styles = {
+    OPEN: {
+      base: isSelected
+        ? 'border-green-500 bg-green-50 shadow-green-100 shadow-md'
+        : 'border-gray-200 bg-white hover:border-green-300',
+      dot: 'bg-green-500',
+      label: isSelected ? 'text-green-700' : 'text-gray-600',
+      desc: isSelected ? 'text-green-500' : 'text-gray-400',
+      badge: 'bg-green-100 text-green-600',
+    },
+    CLOSED: {
+      base: isSelected
+        ? 'border-red-400 bg-red-50 shadow-red-100 shadow-md'
+        : 'border-gray-200 bg-white hover:border-red-300',
+      dot: 'bg-red-400',
+      label: isSelected ? 'text-red-700' : 'text-gray-600',
+      desc: isSelected ? 'text-red-400' : 'text-gray-400',
+      badge: 'bg-red-100 text-red-500',
+    },
+  }[value];
+
+  return (
+    <button
+      type="button"
+      onClick={() => !disabled && !isSelected && onSelect(value)}
+      disabled={disabled || isSelected}
+      className={`relative flex-1 flex flex-col items-center gap-2 rounded-2xl border-2 p-4 transition-all
+        ${styles.base} disabled:cursor-not-allowed`}
+    >
+      {isSelected && (
+        <CheckCircle2 size={16} className={`absolute top-2 right-2 ${isOpen ? 'text-green-500' : 'text-red-400'}`} />
+      )}
+
+      <div className="flex items-center gap-2">
+        <span className={`w-2.5 h-2.5 rounded-full ${styles.dot} ${isSelected && isOpen ? 'animate-pulse' : ''}`} />
+        <span className={`text-sm font-bold ${styles.label}`}>
+          {isOpen ? 'Open' : 'Closed'}
+        </span>
+      </div>
+
+      <span className={`text-xs text-center leading-relaxed ${styles.desc}`}>
+        {isOpen ? 'Siap menerima\npekerjaan' : 'Tidak tersedia\nsementara'}
+      </span>
+
+      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${styles.badge}`}>
+        {isOpen ? 'OPEN' : 'CLOSED'}
+      </span>
+    </button>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+
 export default function TukangDashboardContent() {
   const user = useAuthStore((s) => s.user);
   const {
-    isAccepting,
+    workStatus,
     isSavingStatus,
     statusError,
+    profileLoadStatus,
     dailySalary,
     isSavingSalary,
     salarySaved,
@@ -21,7 +89,7 @@ export default function TukangDashboardContent() {
     locStatus,
     locCoords,
     locError,
-    toggleAccepting,
+    setWorkStatus,
     setDailySalary,
     saveSalary,
     syncLocation,
@@ -36,53 +104,69 @@ export default function TukangDashboardContent() {
         <div className="absolute right-0 top-0 w-28 h-28 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
         <p className="text-white/80 text-sm">Dashboard Tukang</p>
         <h2 className="text-white text-xl font-bold mt-0.5">{user?.name} 🔧</h2>
-        <p className="text-white/70 text-xs mt-2 max-w-[200px] leading-relaxed">
-          Kelola status pekerjaan dan profil Anda di sini
-        </p>
+
+        {/* Status badge di banner */}
+        <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1">
+          <span className={`w-2 h-2 rounded-full ${
+            workStatus === 'OPEN' ? 'bg-green-300 animate-pulse' : 'bg-red-300'
+          }`} />
+          <span className="text-white text-xs font-semibold">
+            {workStatus === 'OPEN' ? 'Menerima Pekerjaan' : 'Tidak Menerima Pekerjaan'}
+          </span>
+        </div>
       </div>
 
       <div className="flex flex-col gap-4 px-4 mt-4 pb-8">
 
         {/* Status Pekerjaan */}
         <div className="bg-white rounded-3xl p-5 shadow-sm border border-orange-100">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-2xl bg-orange-100 flex items-center justify-center">
-              <Briefcase size={20} className="text-orange-500" />
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-orange-100 flex items-center justify-center">
+                <Briefcase size={20} className="text-orange-500" />
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900 text-sm">Status Pekerjaan</h3>
+                <p className="text-xs text-gray-400 mt-0.5">Atur ketersediaan Anda saat ini</p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-bold text-gray-900 text-sm">Status Pekerjaan</h3>
-              <p className="text-xs text-gray-400 mt-0.5">Atur ketersediaan Anda saat ini</p>
-            </div>
+
+            {isSavingStatus && (
+              <Loader2 size={18} className="animate-spin text-orange-400" />
+            )}
           </div>
 
-          <button
-            onClick={toggleAccepting}
-            disabled={isSavingStatus}
-            className={`w-full flex items-center justify-between rounded-2xl px-5 py-4 transition-all font-semibold text-sm
-              ${isAccepting
-                ? 'bg-green-500 text-white shadow-lg shadow-green-200 hover:bg-green-600 disabled:opacity-60'
-                : 'bg-gray-100 text-gray-500 hover:bg-gray-200 disabled:opacity-60'
-              }`}
-          >
-            <div className="flex items-center gap-3">
-              {isSavingStatus
-                ? <Loader2 size={22} className="animate-spin" />
-                : isAccepting
-                  ? <CheckCircle2 size={22} className="text-white" />
-                  : <XCircle size={22} className="text-gray-400" />
-              }
-              <span>
-                {isAccepting ? 'Menerima Pekerjaan' : 'Tidak Menerima Pekerjaan'}
-              </span>
+          {/* Loading state saat ambil profil */}
+          {profileLoadStatus === 'loading' ? (
+            <div className="flex items-center justify-center gap-2 py-6 text-gray-400">
+              <Loader2 size={18} className="animate-spin" />
+              <span className="text-sm">Memuat status...</span>
             </div>
+          ) : (
+            <div className="flex gap-3">
+              <WorkStatusOption
+                value="OPEN"
+                current={workStatus}
+                disabled={isSavingStatus}
+                onSelect={setWorkStatus}
+              />
+              <WorkStatusOption
+                value="CLOSED"
+                current={workStatus}
+                disabled={isSavingStatus}
+                onSelect={setWorkStatus}
+              />
+            </div>
+          )}
 
-            {/* Toggle switch visual */}
-            <div className={`relative w-12 h-6 rounded-full transition-colors
-              ${isAccepting ? 'bg-white/30' : 'bg-gray-300'}`}>
-              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all
-                ${isAccepting ? 'left-7' : 'left-1'}`} />
+          {profileLoadStatus === 'error' && (
+            <div className="mt-3 flex items-center gap-2 rounded-2xl bg-amber-50 border border-amber-200 px-4 py-3">
+              <AlertCircle size={16} className="text-amber-400 shrink-0" />
+              <p className="text-xs text-amber-600">
+                Profil tukang belum terhubung. Hubungi admin untuk aktivasi.
+              </p>
             </div>
-          </button>
+          )}
 
           {statusError && (
             <div className="mt-3 flex items-center gap-2 rounded-2xl bg-red-50 border border-red-200 px-4 py-3">

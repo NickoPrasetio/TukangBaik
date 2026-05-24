@@ -1,7 +1,8 @@
+import { WorkStatus } from '@/types';
 import { apiClient } from './client';
 
 export interface TukangStatusPayload {
-  isAvailable: boolean;
+  status: WorkStatus;
 }
 
 export interface TukangSalaryPayload {
@@ -13,18 +14,26 @@ export interface TukangLocationPayload {
   longitude: number;
 }
 
-export interface TukangUpdateResponse {
-  success: boolean;
-  message?: string;
+export interface TukangProfileResponse {
+  id: string;
+  name: string;
+  workStatus: WorkStatus;
+  isAvailable: boolean;
+  pricePerDay: number;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 export const tukangApi = {
+  getProfile: (token: string) =>
+    apiClient.get<TukangProfileResponse>('/api/tukang/profile', token),
+
   updateStatus: (payload: TukangStatusPayload, token: string) =>
-    apiClient.patch<TukangUpdateResponse>('/api/tukang/status', payload, token),
+    apiClient.patch<TukangProfileResponse>('/api/tukang/status', payload, token),
 
   updateSalary: (payload: TukangSalaryPayload, token: string) =>
-    apiClient.patch<TukangUpdateResponse>('/api/tukang/salary', payload, token),
+    apiClient.patch<TukangProfileResponse>('/api/tukang/salary', payload, token),
 
   updateLocation: (payload: TukangLocationPayload, token: string) =>
-    apiClient.patch<TukangUpdateResponse>('/api/tukang/location', payload, token),
+    apiClient.patch<TukangProfileResponse>('/api/tukang/location', payload, token),
 };

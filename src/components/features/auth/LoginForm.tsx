@@ -4,13 +4,17 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Mail, Lock } from 'lucide-react';
 import { useLoginForm } from '@/hooks/useLoginForm';
+import { useAuthStore } from '@/store/authStore';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 
 export default function LoginForm() {
   const router = useRouter();
   const { register, errors, isSubmitting, submitError, onSubmit } =
-    useLoginForm(() => router.push('/dashboard'));
+    useLoginForm(() => {
+      const { user } = useAuthStore.getState();
+      router.push(user?.userType === 'TUKANG' ? '/tukang-dashboard' : '/dashboard');
+    });
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>

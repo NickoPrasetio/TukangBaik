@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { Worker } from '@/types';
+import { Worker, WorkStatus } from '@/types';
 
 export interface WorkerApiResponse {
   id: string;
@@ -13,6 +13,7 @@ export interface WorkerApiResponse {
   location: string;
   pricePerDay: number;
   isAvailable: boolean;
+  workStatus: WorkStatus;
   bio: string;
 }
 
@@ -29,7 +30,11 @@ export interface WorkerCreatePayload {
 }
 
 function toWorker(n: WorkerApiResponse): Worker {
-  return { ...n, reviews: [] };
+  return {
+    ...n,
+    workStatus: n.workStatus ?? 'OPEN',
+    reviews: [],
+  };
 }
 
 export const workerApi = {
