@@ -28,6 +28,7 @@ export function useCreateBookingMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.workers.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.bookings.my });
+      queryClient.invalidateQueries({ queryKey: queryKeys.bookings.workerOrders });
     },
   });
 }

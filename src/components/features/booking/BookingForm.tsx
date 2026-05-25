@@ -6,7 +6,7 @@ import { useState, useMemo } from 'react';
 import {
   MapPin, Calendar, Clock, Wrench,
   CreditCard, ChevronDown, AlertCircle,
-  CheckCircle2, Loader2, ArrowLeft, User,
+  CheckCircle2, Loader2, User,
 } from 'lucide-react';
 import { Worker } from '@/types';
 import { INDONESIAN_CITIES, IndonesianCity } from '@/data/indonesian-cities';
@@ -116,6 +116,10 @@ export default function BookingForm({ worker }: BookingFormProps) {
       {
         onSuccess: (booking) => {
           router.push(`/booking/success?id=${booking.id}`);
+        },
+        onError: (err) => {
+          const msg = err instanceof Error ? err.message : 'Gagal membuat booking';
+          router.push(`/booking/failed?workerId=${worker.id}&error=${encodeURIComponent(msg)}`);
         },
       },
     );
@@ -340,14 +344,6 @@ export default function BookingForm({ worker }: BookingFormProps) {
           <span className="text-white text-xl font-black">{formatPrice(worker.pricePerDay * durationDays)}</span>
         </div>
       </div>
-
-      {/* Error global */}
-      {mutation.isError && (
-        <div className="flex items-center gap-2 rounded-2xl bg-red-50 border border-red-200 px-4 py-3">
-          <AlertCircle size={16} className="text-red-400 shrink-0" />
-          <p className="text-xs text-red-500">{(mutation.error as Error)?.message}</p>
-        </div>
-      )}
 
       {/* Submit */}
       <button

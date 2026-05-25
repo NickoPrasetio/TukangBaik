@@ -16,8 +16,9 @@ export const queryKeys = {
                 ['reviews', 'worker', workerId]                             as const,
   },
   bookings: {
-    all:  ['bookings']                                                      as const,
-    my:   ['bookings', 'my']                                                as const,
+    all:          ['bookings']                                              as const,
+    my:           ['bookings', 'my']                                        as const,
+    workerOrders: ['bookings', 'worker-orders']                             as const,
     detail: (id: string) => ['bookings', 'detail', id]                     as const,
   },
 } as const;

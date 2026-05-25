@@ -24,4 +24,16 @@ export const bookingApi = {
 
   getById: (id: string, token: string) =>
     apiClient.get<Booking>(`/api/bookings/${id}`, token),
+
+  /** Ambil order yang masuk ke tukang yang sedang login */
+  getWorkerOrders: (token: string) =>
+    apiClient.get<Booking[]>('/api/bookings/my-orders', token),
+
+  /** Waktu server — dipakai untuk validasi tanggal agar tidak bisa dimanipulasi device */
+  getServerTime: () =>
+    apiClient.get<{ date: string; dateTime: string }>('/api/bookings/server-time'),
+
+  /** Tukang memulai order: PENDING → CONFIRMED */
+  confirmOrder: (id: string, token: string) =>
+    apiClient.patch<Booking>(`/api/bookings/${id}/confirm`, {}, token),
 };

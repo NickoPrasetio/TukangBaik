@@ -1,12 +1,15 @@
 'use client';
 
+import Link from 'next/link';
 import {
   MapPin, Briefcase, Wallet,
   CheckCircle2, XCircle, Loader2, RefreshCw, AlertCircle,
+  ClipboardList, ChevronRight,
 } from 'lucide-react';
 import { WorkStatus } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import { useTukangDashboard } from '@/hooks/useTukangDashboard';
+import { useWorkerOrdersQuery } from '@/hooks/useWorkerOrdersQuery';
 import TukangNavbar from './TukangNavbar';
 
 // ─── WorkStatus Option Card ───────────────────────────────────────────────────
@@ -77,6 +80,11 @@ function WorkStatusOption({ value, current, disabled, onSelect }: StatusOptionPr
 
 export default function TukangDashboardContent() {
   const user = useAuthStore((s) => s.user);
+  const { data: orders } = useWorkerOrdersQuery();
+
+  const pendingCount = orders?.filter((o) => o.status === 'PENDING').length ?? 0;
+  const totalOrders  = orders?.length ?? 0;
+
   const {
     workStatus,
     isSavingStatus,
@@ -120,6 +128,29 @@ export default function TukangDashboardContent() {
       </div>
 
       <div className="flex flex-col gap-4 px-4 mt-4 pb-8">
+
+        {/* Order Masuk — summary card */}
+        <Link
+          href="/tukang-dashboard/orders"
+          className="bg-white rounded-3xl p-5 shadow-sm border border-orange-100 flex items-center justify-between group active:scale-[0.98] transition-transform"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-orange-100 flex items-center justify-center">
+              <ClipboardList size={20} className="text-orange-500" />
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-900 text-sm">Order Masuk</h3>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {orders == null
+                  ? 'Memuat…'
+                  : totalOrders === 0
+                    ? 'Belum ada order'
+                    : `${totalOrders} order · ${pendingCount} menunggu`}
+              </p>
+            </div>
+          </div>
+          <ChevronRight size={18} className="text-orange-300 group-hover:text-orange-500 transition-colors" />
+        </Link>
 
         {/* Status Pekerjaan */}
         <div className="bg-white rounded-3xl p-5 shadow-sm border border-orange-100">
