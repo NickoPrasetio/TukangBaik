@@ -3,26 +3,15 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
-import { googleCheckUseCase } from '@/data/auth';
-
-/** Kunci sessionStorage yang dipakai oleh SEMUA OAuth provider */
-export const OAUTH_PENDING_KEY = 'oauth_pending';
-
-/** Data yang disimpan sementara untuk form completion */
-export interface OAuthPendingData {
-  provider: 'google' | 'facebook';
-  accessToken: string;
-  name: string;
-  email: string;       // bisa kosong jika Facebook tidak memberi email
-  avatar?: string;
-}
+import { facebookCheckUseCase } from '@/data/auth';
+import { OAUTH_PENDING_KEY, OAuthPendingData } from './useGoogleLoginMutation';
 
 /**
- * Hook untuk handle Google Sign-In.
+ * Hook untuk handle Facebook Sign-In.
  * Jika user sudah ada → login langsung.
  * Jika user baru → simpan ke sessionStorage, redirect ke /signup.
  */
-export function useGoogleLoginMutation(onSuccess: () => void) {
+export function useFacebookLoginMutation(onSuccess: () => void) {
   const { setSession } = useAuthStore();
   const router         = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -32,7 +21,7 @@ export function useGoogleLoginMutation(onSuccess: () => void) {
     setIsLoading(true);
     setError('');
     try {
-      const result = await googleCheckUseCase.execute(accessToken);
+      const result = await facebookCheckUseCase.execute(accessToken);
 
       if (!result.success) {
         setError(result.error.message);
@@ -43,7 +32,7 @@ export function useGoogleLoginMutation(onSuccess: () => void) {
 
       if (data.isNewUser) {
         const pending: OAuthPendingData = {
-          provider: 'google',
+          provider: 'facebook',
           accessToken,
           name:   data.name,
           email:  data.email,

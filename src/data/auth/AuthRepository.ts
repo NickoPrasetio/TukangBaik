@@ -103,6 +103,54 @@ export class AuthRepository implements IAuthRepository {
     }
   }
 
+  async facebookCheck(accessToken: string): Promise<AuthResult<GoogleCheckResult>> {
+    try {
+      const res = await authApi.facebookCheck(accessToken);
+      if (res.newUser) {
+        return {
+          success: true,
+          data: {
+            isNewUser: true,
+            name:   res.name ?? '',
+            email:  res.email ?? '',
+            avatar: res.avatar,
+          },
+        };
+      }
+      return {
+        success: true,
+        data: {
+          isNewUser: false,
+          session: {
+            user: mapUser({
+              id: res.id!,
+              name: res.name!,
+              email: res.email!,
+              phone: res.phone,
+              role: res.role!,
+              avatar: res.avatar,
+              userType: res.userType,
+              latitude: res.latitude,
+              longitude: res.longitude,
+            }),
+            token: res.token!,
+          },
+        },
+      };
+    } catch (err) {
+      return { success: false, error: mapError(err) };
+    }
+  }
+
+  async facebookComplete(accessToken: string, userType: string, phone?: string): Promise<AuthResult<AuthSession>> {
+    try {
+      const res = await authApi.facebookComplete(accessToken, userType, phone);
+      return { success: true, data: { user: mapUser(res), token: res.token! } };
+    } catch (err) {
+      return { success: false, error: mapError(err) };
+    }
+  }
+
   async updateProfile(token: string, data: { name?: string; phone?: string }): Promise<AuthResult<User>> {
     try {
       const res = await authApi.updateMe(data, token);

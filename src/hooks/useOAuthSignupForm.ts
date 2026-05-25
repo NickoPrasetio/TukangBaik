@@ -5,27 +5,24 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
-import { googleCompleteUseCase } from '@/data/auth';
+import { googleCompleteUseCase, facebookCompleteUseCase } from '@/data/auth';
 import {
   googleSignupSchema,
   GoogleSignupFormValues,
   UserType,
 } from '@/lib/schemas/auth.schema';
-import {
-  GOOGLE_PENDING_KEY,
-  GooglePendingData,
-} from './useGoogleLoginMutation';
+import { OAUTH_PENDING_KEY, OAuthPendingData } from './useGoogleLoginMutation';
 
 /**
- * Hook untuk form penyelesaian registrasi Google.
- * Membaca data dari sessionStorage yang disimpan oleh useGoogleLoginMutation,
- * lalu mengirim ke /api/auth/google/complete setelah user memilih tipe akun.
+ * Hook tunggal untuk form penyelesaian registrasi via OAuth (Google atau Facebook).
+ * Membaca data dari sessionStorage, menentukan provider, lalu memanggil
+ * use case yang sesuai saat submit.
  */
-export function useGoogleSignupForm() {
+export function useOAuthSignupForm() {
   const { setSession } = useAuthStore();
   const router         = useRouter();
 
-  const [pending,      setPending]     = useState<GooglePendingData | null>(null);
+  const [pending,      setPending]     = useState<OAuthPendingData | null>(null);
   const [submitError,  setSubmitError] = useState('');
 
   const {
@@ -40,19 +37,14 @@ export function useGoogleSignupForm() {
 
   const userType = watch('userType');
 
-  // Baca sessionStorage sekali saat mount
   useEffect(() => {
-    const raw = sessionStorage.getItem(GOOGLE_PENDING_KEY);
+    const raw = sessionStorage.getItem(OAUTH_PENDING_KEY);
     if (raw) {
       try {
-        setPending(JSON.parse(raw) as GooglePendingData);
+        setPending(JSON.parse(raw) as OAuthPendingData);
       } catch {
-        // Data rusak — arahkan ke login
         router.replace('/login');
       }
-    } else {
-      // Tidak ada data pending → mungkin langsung buka /signup
-      // Biarkan SignupForm tampil biasa
     }
   }, [router]);
 
@@ -64,15 +56,17 @@ export function useGoogleSignupForm() {
     if (!pending) return;
     setSubmitError('');
 
-    const result = await googleCompleteUseCase.execute(
+    const completeUseCase =
+      pending.provider === 'facebook' ? facebookCompleteUseCase : googleCompleteUseCase;
+
+    const result = await completeUseCase.execute(
       pending.accessToken,
       values.userType,
       values.phone || undefined,
     );
 
     if (result.success) {
-      // Hapus data pending setelah berhasil
-      sessionStorage.removeItem(GOOGLE_PENDING_KEY);
+      sessionStorage.removeItem(OAUTH_PENDING_KEY);
       setSession(result.data.user, result.data.token);
       const { user } = useAuthStore.getState();
       router.push(user?.userType === 'TUKANG' ? '/tukang-dashboard' : '/dashboard');

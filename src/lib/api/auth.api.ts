@@ -45,9 +45,17 @@ export const authApi = {
   googleCheck: (accessToken: string) =>
     apiClient.post<GoogleCheckResponse>('/api/auth/google', { accessToken }),
 
-  /** Step 2: selesaikan registrasi (hanya untuk user baru) */
+  /** Step 2: selesaikan registrasi Google (hanya untuk user baru) */
   googleComplete: (accessToken: string, userType: string, phone?: string) =>
     apiClient.post<AuthResponse>('/api/auth/google/complete', { accessToken, userType, phone }),
+
+  /** Step 1: cek apakah user Facebook sudah ada di DB */
+  facebookCheck: (accessToken: string) =>
+    apiClient.post<GoogleCheckResponse>('/api/auth/facebook', { accessToken }),
+
+  /** Step 2: selesaikan registrasi Facebook (hanya untuk user baru) */
+  facebookComplete: (accessToken: string, userType: string, phone?: string) =>
+    apiClient.post<AuthResponse>('/api/auth/facebook/complete', { accessToken, userType, phone }),
 
   getMe: (token: string) =>
     apiClient.get<AuthResponse>('/api/auth/me', token),

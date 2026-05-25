@@ -34,6 +34,8 @@ export interface IAuthRepository {
   login(email: string, password: string): Promise<AuthResult<AuthSession>>;
   googleCheck(accessToken: string): Promise<AuthResult<GoogleCheckResult>>;
   googleComplete(accessToken: string, userType: string, phone?: string): Promise<AuthResult<AuthSession>>;
+  facebookCheck(accessToken: string): Promise<AuthResult<GoogleCheckResult>>;
+  facebookComplete(accessToken: string, userType: string, phone?: string): Promise<AuthResult<AuthSession>>;
   updateProfile(token: string, data: { name?: string; phone?: string }): Promise<AuthResult<User>>;
   uploadAvatar(token: string, file: File): Promise<AuthResult<User>>;
 }

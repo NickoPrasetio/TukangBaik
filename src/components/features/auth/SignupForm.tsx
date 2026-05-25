@@ -9,13 +9,15 @@ import {
   AlertCircle, Loader2, RefreshCw,
 } from 'lucide-react';
 import { useSignupForm } from '@/hooks/useSignupForm';
-import { useGoogleLoginMutation, GOOGLE_PENDING_KEY } from '@/hooks/useGoogleLoginMutation';
+import { useGoogleLoginMutation, OAUTH_PENDING_KEY } from '@/hooks/useGoogleLoginMutation';
+import { useFacebookLoginMutation } from '@/hooks/useFacebookLoginMutation';
 import { UserType } from '@/lib/schemas/auth.schema';
 import { LocationState } from '@/hooks/useLocation';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import GoogleLoginButton from './GoogleLoginButton';
-import GoogleSignupForm from './GoogleSignupForm';
+import FacebookLoginButton from './FacebookLoginButton';
+import OAuthSignupForm from './OAuthSignupForm';
 import { useAuthStore } from '@/store/authStore';
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -179,22 +181,29 @@ function RegularSignupForm() {
   const { register, errors, isSubmitting, submitError, userType, selectUserType, location, onSubmit } =
     useSignupForm(handleSuccess);
 
-  const { mutate: googleLogin, isLoading: googleLoading, error: googleError } =
+  const { mutate: googleLogin,   isLoading: googleLoading,   error: googleError }   =
     useGoogleLoginMutation(handleSuccess);
+  const { mutate: facebookLogin, isLoading: facebookLoading, error: facebookError } =
+    useFacebookLoginMutation(handleSuccess);
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
 
-      {/* Google Sign-Up */}
+      {/* Social Sign-Up */}
       <GoogleLoginButton
         onToken={googleLogin}
         isLoading={googleLoading}
         label="Daftar dengan Google"
       />
+      <FacebookLoginButton
+        onToken={facebookLogin}
+        isLoading={facebookLoading}
+        label="Daftar dengan Facebook"
+      />
 
-      {googleError && (
+      {(googleError || facebookError) && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
-          <p className="text-sm text-red-600">{googleError}</p>
+          <p className="text-sm text-red-600">{googleError || facebookError}</p>
         </div>
       )}
 
@@ -265,11 +274,11 @@ function RegularSignupForm() {
  * - Tidak → tampilkan RegularSignupForm (manual daftar + tombol Google)
  */
 export default function SignupForm() {
-  const [mode, setMode] = useState<'loading' | 'google' | 'regular'>('loading');
+  const [mode, setMode] = useState<'loading' | 'oauth' | 'regular'>('loading');
 
   useEffect(() => {
-    const hasPending = !!sessionStorage.getItem(GOOGLE_PENDING_KEY);
-    setMode(hasPending ? 'google' : 'regular');
+    const hasPending = !!sessionStorage.getItem(OAUTH_PENDING_KEY);
+    setMode(hasPending ? 'oauth' : 'regular');
   }, []);
 
   if (mode === 'loading') {
@@ -280,8 +289,8 @@ export default function SignupForm() {
     );
   }
 
-  if (mode === 'google') {
-    return <GoogleSignupForm />;
+  if (mode === 'oauth') {
+    return <OAuthSignupForm />;
   }
 
   return <RegularSignupForm />;

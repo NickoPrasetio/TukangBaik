@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation';
 import { Mail, Lock } from 'lucide-react';
 import { useLoginForm } from '@/hooks/useLoginForm';
 import { useGoogleLoginMutation } from '@/hooks/useGoogleLoginMutation';
+import { useFacebookLoginMutation } from '@/hooks/useFacebookLoginMutation';
 import { useAuthStore } from '@/store/authStore';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import GoogleLoginButton from './GoogleLoginButton';
+import FacebookLoginButton from './FacebookLoginButton';
 
 export default function LoginForm() {
   const router = useRouter();
@@ -21,22 +23,29 @@ export default function LoginForm() {
   const { register, errors, isSubmitting, submitError, onSubmit } =
     useLoginForm(handleSuccess);
 
-  const { mutate: googleLogin, isLoading: googleLoading, error: googleError } =
+  const { mutate: googleLogin,   isLoading: googleLoading,   error: googleError }   =
     useGoogleLoginMutation(handleSuccess);
+  const { mutate: facebookLogin, isLoading: facebookLoading, error: facebookError } =
+    useFacebookLoginMutation(handleSuccess);
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
 
-      {/* Google Sign-In */}
+      {/* Social Sign-In */}
       <GoogleLoginButton
         onToken={googleLogin}
         isLoading={googleLoading}
         label="Masuk dengan Google"
       />
+      <FacebookLoginButton
+        onToken={facebookLogin}
+        isLoading={facebookLoading}
+        label="Masuk dengan Facebook"
+      />
 
-      {googleError && (
+      {(googleError || facebookError) && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
-          <p className="text-sm text-red-600">{googleError}</p>
+          <p className="text-sm text-red-600">{googleError || facebookError}</p>
         </div>
       )}
 
