@@ -37,6 +37,15 @@ function toWorker(n: WorkerApiResponse): Worker {
   };
 }
 
+/** Spring Boot Page<T> response shape */
+export interface WorkerPage {
+  content:       Worker[];
+  totalElements: number;
+  totalPages:    number;
+  number:        number;   // 0-based current page
+  last:          boolean;  // true if this is the last page
+}
+
 export const workerApi = {
   getAll: async (search?: string, available?: boolean): Promise<Worker[]> => {
     const params = new URLSearchParams();
@@ -45,6 +54,34 @@ export const workerApi = {
     const query = params.toString() ? `?${params}` : '';
     const data = await apiClient.get<WorkerApiResponse[]>(`/api/workers${query}`);
     return data.map(toWorker);
+  },
+
+  /** Paginated — 10 tukang per halaman untuk infinite scroll */
+  getPage: async (
+    page:      number,
+    size:      number,
+    search?:   string,
+    available?: boolean,
+  ): Promise<WorkerPage> => {
+    const params = new URLSearchParams();
+    params.set('page', String(page));
+    params.set('size', String(size));
+    if (search)    params.set('search',    search);
+    if (available) params.set('available', 'true');
+    const raw = await apiClient.get<{
+      content:       WorkerApiResponse[];
+      totalElements: number;
+      totalPages:    number;
+      number:        number;
+      last:          boolean;
+    }>(`/api/workers/page?${params}`);
+    return {
+      content:       raw.content.map(toWorker),
+      totalElements: raw.totalElements,
+      totalPages:    raw.totalPages,
+      number:        raw.number,
+      last:          raw.last,
+    };
   },
 
   getById: async (id: string): Promise<Worker> => {

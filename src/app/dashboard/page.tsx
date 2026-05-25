@@ -1,6 +1,8 @@
+import Link from 'next/link';
 import AuthGuard from '@/components/features/auth/AuthGuard';
 import Navbar from '@/components/features/dashboard/Navbar';
 import WorkerList from '@/components/features/dashboard/WorkerList';
+import { ClipboardList } from 'lucide-react';
 
 export default function DashboardPage() {
   return (
@@ -16,6 +18,27 @@ export default function DashboardPage() {
         <p className="text-white/70 text-xs mt-2 max-w-[180px] leading-relaxed">
           Tukang berpengalaman & terpercaya siap membantu Anda
         </p>
+      </div>
+
+      {/* My Order shortcut */}
+      <div className="px-4 mt-4">
+        <Link
+          href="/dashboard/orders"
+          className="flex items-center justify-between bg-white rounded-2xl px-4 py-3.5 border border-blue-100 shadow-sm hover:border-blue-300 hover:shadow-md transition-all active:scale-[0.98]"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center">
+              <ClipboardList size={18} className="text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-gray-900">My Order</p>
+              <p className="text-xs text-gray-400">Lihat & kelola ordermu</p>
+            </div>
+          </div>
+          <span className="text-xs font-semibold text-blue-500 bg-blue-50 px-2.5 py-1 rounded-full">
+            Lihat
+          </span>
+        </Link>
       </div>
 
       {/* Stats row */}

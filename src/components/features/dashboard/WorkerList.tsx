@@ -1,32 +1,101 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Search, SlidersHorizontal, Plus, RefreshCw } from 'lucide-react';
 import { useWorkerStore } from '@/store/workerStore';
 import { useAuthStore } from '@/store/authStore';
-import { useWorkersQuery } from '@/hooks/useWorkersQuery';
+import { useWorkersInfiniteQuery } from '@/hooks/useWorkersInfiniteQuery';
 import { Worker } from '@/types';
 import WorkerCard from './WorkerCard';
 import WorkerDetailModal from './WorkerDetailModal';
 import AddWorkerModal from './AddWorkerModal';
 import { useDebounce } from '@/hooks/useDebounce';
 
+// ─── Skeleton Card ────────────────────────────────────────────────────────────
+
+function WorkerCardSkeleton() {
+  return (
+    <div className="bg-white rounded-3xl border border-gray-100 p-4 flex flex-col gap-3">
+      <div className="flex items-start gap-3">
+        <div className="w-16 h-16 rounded-2xl bg-gray-200 animate-pulse shrink-0" />
+        <div className="flex-1 flex flex-col gap-2 pt-1">
+          <div className="flex justify-between gap-2">
+            <div className="h-4 bg-gray-200 rounded-lg animate-pulse w-3/5" />
+            <div className="h-5 bg-gray-200 rounded-full animate-pulse w-16" />
+          </div>
+          <div className="h-3 bg-gray-200 rounded-lg animate-pulse w-2/5" />
+          <div className="h-3 bg-gray-200 rounded-lg animate-pulse w-1/2" />
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <div className="h-6 bg-gray-200 rounded-full animate-pulse w-24" />
+        <div className="h-6 bg-gray-200 rounded-full animate-pulse w-16" />
+        <div className="h-6 bg-gray-200 rounded-full animate-pulse w-20" />
+      </div>
+      <div className="flex items-center justify-between border-t border-gray-100 pt-2">
+        <div>
+          <div className="h-3 bg-gray-200 rounded-lg animate-pulse w-28 mb-1.5" />
+          <div className="h-5 bg-gray-200 rounded-lg animate-pulse w-24" />
+        </div>
+        <div className="h-8 bg-gray-200 rounded-xl animate-pulse w-16" />
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+
 export default function WorkerList() {
   const { searchQuery, filterAvailable, setSearchQuery, setFilterAvailable } = useWorkerStore();
   const isAdmin = useAuthStore((s) => s.isAdmin);
 
-  const [inputValue,    setInputValue]    = useState(searchQuery);
+  const [inputValue,     setInputValue]     = useState(searchQuery);
   const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
   const [showAddModal,   setShowAddModal]   = useState(false);
 
-  // Debounce input → update store → query key berubah → React Query fetch
+  // Sentinel div — IntersectionObserver watches this to trigger next page
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // Debounce input → update Zustand store → infinite query key changes → reset to page 0
   useDebounce(inputValue, 400, setSearchQuery);
 
-  const { data: workers = [], isLoading, isError, refetch } = useWorkersQuery();
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useWorkersInfiniteQuery();
+
+  // Flatten all loaded pages into a single array
+  const workers       = data?.pages.flatMap((p) => p.content) ?? [];
+  const totalElements = data?.pages[0]?.totalElements ?? 0;
+
+  // ─── IntersectionObserver — trigger fetchNextPage when sentinel enters viewport
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1, rootMargin: '120px' },
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Search bar */}
+
+      {/* ── Search bar ── */}
       <div className="relative">
         <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
         <input
@@ -38,7 +107,7 @@ export default function WorkerList() {
         />
       </div>
 
-      {/* Filter row + admin button */}
+      {/* ── Filter row + admin button ── */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <SlidersHorizontal size={16} className="text-gray-500" />
@@ -65,19 +134,19 @@ export default function WorkerList() {
         )}
       </div>
 
-      {/* Loading skeleton */}
+      {/* ── Initial loading — 3 skeletons ── */}
       {isLoading && (
         <div className="flex flex-col gap-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white rounded-3xl h-36 animate-pulse border border-gray-100" />
-          ))}
+          {[1, 2, 3].map((i) => <WorkerCardSkeleton key={i} />)}
         </div>
       )}
 
-      {/* Error state */}
+      {/* ── Error state ── */}
       {isError && !isLoading && (
         <div className="text-center py-10">
-          <p className="text-gray-500 mb-2">Gagal memuat data tukang</p>
+          <p className="text-gray-500 mb-2">
+            {(error as Error)?.message ?? 'Gagal memuat data tukang'}
+          </p>
           <button
             onClick={() => refetch()}
             className="inline-flex items-center gap-1.5 text-blue-500 text-sm font-medium hover:underline"
@@ -87,23 +156,50 @@ export default function WorkerList() {
         </div>
       )}
 
-      {/* Result count */}
-      {!isLoading && !isError && (
+      {/* ── Result count ── */}
+      {!isLoading && !isError && workers.length > 0 && (
         <p className="text-sm text-gray-500">
-          <span className="font-semibold text-gray-800">{workers.length}</span> tukang ditemukan
+          Menampilkan{' '}
+          <span className="font-semibold text-gray-800">{workers.length}</span>
+          {totalElements > workers.length && (
+            <> dari <span className="font-semibold text-gray-800">{totalElements}</span></>
+          )}{' '}
+          tukang
         </p>
       )}
 
-      {/* List */}
+      {/* ── Worker list ── */}
       {!isLoading && !isError && workers.length > 0 && (
         <div className="flex flex-col gap-3">
           {workers.map((worker) => (
             <WorkerCard key={worker.id} worker={worker} onView={setSelectedWorker} />
           ))}
+
+          {/* Sentinel — positioned right after last card so observer fires early */}
+          <div ref={sentinelRef} className="h-1" aria-hidden />
+
+          {/* Loading-more skeletons */}
+          {isFetchingNextPage && (
+            <>
+              <WorkerCardSkeleton />
+              <WorkerCardSkeleton />
+            </>
+          )}
+
+          {/* End-of-list divider */}
+          {!hasNextPage && !isFetchingNextPage && (
+            <div className="flex items-center gap-3 py-3">
+              <div className="flex-1 h-px bg-gray-100" />
+              <p className="text-xs text-gray-400 shrink-0">
+                Semua {workers.length} tukang sudah ditampilkan
+              </p>
+              <div className="flex-1 h-px bg-gray-100" />
+            </div>
+          )}
         </div>
       )}
 
-      {/* Empty state */}
+      {/* ── Empty state ── */}
       {!isLoading && !isError && workers.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <span className="text-5xl mb-4">🔍</span>
@@ -112,6 +208,7 @@ export default function WorkerList() {
         </div>
       )}
 
+      {/* ── Modals ── */}
       {selectedWorker && (
         <WorkerDetailModal worker={selectedWorker} onClose={() => setSelectedWorker(null)} />
       )}

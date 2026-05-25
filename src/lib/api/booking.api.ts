@@ -36,4 +36,8 @@ export const bookingApi = {
   /** Tukang memulai order: PENDING → CONFIRMED */
   confirmOrder: (id: string, token: string) =>
     apiClient.patch<Booking>(`/api/bookings/${id}/confirm`, {}, token),
+
+  /** Customer menyelesaikan order: CONFIRMED → COMPLETED */
+  completeOrder: (id: string, token: string) =>
+    apiClient.patch<Booking>(`/api/bookings/${id}/complete`, {}, token),
 };

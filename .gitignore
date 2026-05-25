@@ -30,8 +30,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# env files — .local berisi secret, tidak di-commit
+# .env.development dan .env.production aman di-commit (tidak mengandung secret)
+.env.local
+.env.*.local
 
 # vercel
 .vercel

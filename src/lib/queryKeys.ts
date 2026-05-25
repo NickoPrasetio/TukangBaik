@@ -7,6 +7,8 @@ export const queryKeys = {
     all:  ['workers']                                                       as const,
     list: (search?: string, available?: boolean) =>
             ['workers', 'list', { search, available }]                      as const,
+    infinite: (search?: string, available?: boolean) =>
+            ['workers', 'infinite', { search, available }]                  as const,
     detail: (id: string) =>
             ['workers', 'detail', id]                                       as const,
   },
